@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart-in</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+    <div class="page">
+        <header class="hero">
+            <div class="hero-badge">US STOCK ANALYZER</div>
+            <h1>Chart-in</h1>
+            <p class="subtitle">주타, 주식하다 현타올때</p>
+            <p class="hero-desc">
+                미국 주식 티커 하나만 입력하면 차트와 보조지표를 자동 분석해서
+                매수 등급을 보여줍니다.
+            </p>
+        </header>
+
+        <section class="search-card">
+            <div class="search-row">
+                <input id="tickerInput" type="text" placeholder="예: AAPL, NVDA, TSLA" value="AAPL">
+                <button id="analyzeBtn">분석하기</button>
+            </div>
+            <p id="statusText" class="status-text">예시 티커: AAPL, MSFT, NVDA, TSLA</p>
+        </section>
+
+        <section id="resultSection" class="result-section hidden">
+            <div class="summary-grid">
+                <div class="metric-card">
+                    <div class="label">종목</div>
+                    <div id="companyName" class="value large">-</div>
+                    <div id="tickerName" class="subvalue">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">매수 등급</div>
+                    <div id="gradeBadge" class="grade-badge">-</div>
+                    <div id="commentText" class="subvalue">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">종합 점수</div>
+                    <div id="scoreValue" class="value">-</div>
+                    <div class="subvalue">100점 기준</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">현재가</div>
+                    <div id="priceValue" class="value">-</div>
+                    <div id="changeValue" class="subvalue">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">기준일</div>
+                    <div id="dateValue" class="value">-</div>
+                    <div class="subvalue">일봉 종가 기준</div>
+                </div>
+            </div>
+
+            <div class="reason-card">
+                <h3>분석 근거</h3>
+                <ul id="reasonList"></ul>
+            </div>
+
+            <div class="chart-card">
+                <h3>가격 차트</h3>
+                <div id="priceChart" class="chart-box"></div>
+            </div>
+
+            <div class="dual-grid">
+                <div class="chart-card">
+                    <h3>MACD</h3>
+                    <div id="macdChart" class="chart-box small"></div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>RSI · 스토캐스틱</h3>
+                    <div id="oscillatorChart" class="chart-box small"></div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="section-title">핵심 지표</h3>
+                <div id="indicatorGrid" class="indicator-grid"></div>
+            </div>
+
+            <p class="disclaimer">
+                본 결과는 참고용 기술적 분석이며 실제 투자 판단과 책임은 본인에게 있습니다.
+            </p>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <footer class="site-footer">
+        <small>Made by KIMBND</small>
+        <small>모든문의 : <a href="mailto:coke_bom@naver.com">coke_bom@naver.com</a></small>
+    </footer>
+</body>
+</html>
