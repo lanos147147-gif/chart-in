@@ -654,5 +654,12 @@ async function loadTop10() {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new
+            throw new Error(data.error || "TOP10 조회 실패");
+        }
 
+        renderTop10(data.items || []);
+        setTop10Status(`Strong Buy 후보 ${data.items.length}개를 불러왔습니다.`);
+    } catch (error) {
+        setTop10Status(error.message || "TOP10 조회 중 오류가 발생했습니다.", true);
+    }
+}
