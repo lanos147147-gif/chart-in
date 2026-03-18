@@ -3,5 +3,5 @@ pandas
 yfinance
 ta
 finance-datareader
-gunicorn
 deep-translator
+gunicorn

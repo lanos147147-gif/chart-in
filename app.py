@@ -1,10 +1,10 @@
 from flask import Flask, render_template, jsonify, request
-from deep_translator import GoogleTranslator
 from datetime import datetime
 import time
 import pandas as pd
 import yfinance as yf
 import FinanceDataReader as fdr
+from deep_translator import GoogleTranslator
 from ta.trend import SMAIndicator, MACD
 from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.volatility import BollingerBands
@@ -34,15 +34,10 @@ KR_TODAY_CANDIDATES = [
     {"ticker": "196170.KQ", "name": "알테오젠", "market": "KOSDAQ"}
 ]
 
-_top10_cache = {
-    "timestamp": 0,
-    "data": []
-}
+_top10_cache = {"timestamp": 0, "data": []}
+_kr_cache = {"timestamp": 0, "data": []}
 
-_kr_cache = {
-    "timestamp": 0,
-    "data": []
-}
+translator = GoogleTranslator(source="auto", target="ko")
 
 
 def safe_round(value, digits=2):
@@ -92,18 +87,12 @@ def normalize_market_to_suffix(market_value):
     return "KS", "KOSPI"
 
 
-def format_news_time(ts):
-    try:
-        return datetime.fromtimestamp(int(ts)).strftime("%Y-%m-%d %H:%M")
-    except Exception:
-        return None
-
 def translate_ko(text):
     text = str(text or "").strip()
     if not text:
         return ""
     try:
-        return GoogleTranslator(source="auto", target="ko").translate(text)
+        return translator.translate(text)
     except Exception:
         return text
 
@@ -125,6 +114,7 @@ def format_news_datetime(value):
         return dt.strftime("%Y-%m-%d %H:%M")
     except Exception:
         return str(value)
+
 
 def get_news_items(ticker, fallback_name=None, limit=5):
     items = []
@@ -201,7 +191,6 @@ def get_news_items(ticker, fallback_name=None, limit=5):
         })
 
     return items
-
 
 
 def get_kr_universe():
@@ -663,9 +652,7 @@ def api_analyze_kr(query):
 @app.route("/api/top10")
 def api_top10():
     try:
-        return jsonify({
-            "items": get_top10_strong_buy()
-        })
+        return jsonify({"items": get_top10_strong_buy()})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
