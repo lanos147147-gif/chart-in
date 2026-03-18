@@ -2,5 +2,5 @@ Flask
 pandas
 yfinance
 ta
-FinanceDataReader
+finance-datareader
 gunicorn
