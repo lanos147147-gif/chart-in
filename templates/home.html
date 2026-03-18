@@ -3,14 +3,14 @@
 <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3993361237656892" crossorigin="anonymous"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Chart-in</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20">
 </head>
 <body>
     <div class="top-visit-counter">
-    방문수 {{ visit_count }}
-</div>
+        방문수 {{ visit_count }}
+    </div>
 
     <div class="page">
         <header class="hero">
@@ -42,11 +42,46 @@
                 <span class="market-link">한국주식 페이지 열기</span>
             </a>
         </section>
+
+        <!-- 여기부터 새로 추가 -->
+        <section class="home-today-section">
+            <div class="section-head">
+                <div>
+                    <h2>Today Dashboard</h2>
+                    <p>오늘 바로 볼 만한 종목 요약</p>
+                </div>
+            </div>
+
+            <div class="home-market-grid">
+                <article class="home-market-card">
+                    <div class="home-market-head">
+                        <h3>미국 추천</h3>
+                        <a href="/us">미국 페이지</a>
+                    </div>
+                    <div id="homeTodayUs" class="mini-today-list">
+                        <div class="empty-box">불러오는 중...</div>
+                    </div>
+                </article>
+
+                <article class="home-market-card">
+                    <div class="home-market-head">
+                        <h3>한국 추천</h3>
+                        <a href="/kr">한국 페이지</a>
+                    </div>
+                    <div id="homeTodayKr" class="mini-today-list">
+                        <div class="empty-box">불러오는 중...</div>
+                    </div>
+                </article>
+            </div>
+        </section>
+        <!-- 여기까지 새로 추가 -->
     </div>
 
     <footer class="site-footer">
         <small>Made by KIMBND</small>
         <small>모든문의 : <a href="mailto:coke_bom@naver.com">coke_bom@naver.com</a></small>
     </footer>
+
+    <script src="{{ url_for('static', filename='home.js') }}"></script>
 </body>
 </html>

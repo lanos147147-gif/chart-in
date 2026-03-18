@@ -3,7 +3,7 @@
 <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3993361237656892" crossorigin="anonymous"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Chart-in | 한국주식</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -31,96 +31,151 @@
             </iframe>
         </section>
 
-        <section class="search-card">
-            <div class="search-row kr-row">
-                <select id="marketSelect" class="market-select">
-                    <option value="KS">코스피 (KS)</option>
-                    <option value="KQ">코스닥 (KQ)</option>
-                </select>
-                <input id="tickerInput" type="text" placeholder="예: 삼성전자, 하이닉스, 005930, 005930.KS" value="삼성전자">
-                <button id="analyzeBtn">분석하기</button>
+        <div class="insight-layout">
+            <div class="insight-main">
+                <section class="search-card">
+                    <div class="search-row kr-row">
+                        <select id="marketSelect" class="market-select">
+                            <option value="KS">코스피 (KS)</option>
+                            <option value="KQ">코스닥 (KQ)</option>
+                        </select>
+                        <input id="tickerInput" type="text" placeholder="예: 삼성전자, 하이닉스, 005930, 005930.KS" value="삼성전자">
+                        <button id="analyzeBtn">분석하기</button>
+                    </div>
+                    <p id="statusText" class="status-text">종목명 또는 코드 검색: 삼성전자, SK하이닉스, 005930, 000660</p>
+                    <div id="krSuggestList" class="kr-suggest-list"></div>
+                </section>
+
+                <section class="recent-section">
+                    <div class="recent-card">
+                        <div class="recent-header">
+                            <h3>최근 검색 5개</h3>
+                            <button id="clearRecentBtn" type="button" class="clear-btn">전체삭제</button>
+                        </div>
+                        <div id="recentTickers" class="chip-list"></div>
+                    </div>
+                </section>
+
+                <section id="resultSection" class="result-section hidden">
+                    <div class="summary-grid">
+                        <div class="metric-card">
+                            <div class="label">종목</div>
+                            <div id="companyName" class="value large">-</div>
+                            <div id="tickerName" class="subvalue">-</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="label">매수 등급</div>
+                            <div id="gradeBadge" class="grade-badge">-</div>
+                            <div id="commentText" class="subvalue">-</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="label">종합 점수</div>
+                            <div id="scoreValue" class="value">-</div>
+                            <div class="subvalue">100점 기준</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="label">현재가</div>
+                            <div id="priceValue" class="value">-</div>
+                            <div id="changeValue" class="subvalue">-</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="label">기준일</div>
+                            <div id="dateValue" class="value">-</div>
+                            <div class="subvalue">일봉 종가 기준</div>
+                        </div>
+                    </div>
+
+                    <div class="reason-card">
+                        <h3>분석 근거</h3>
+                        <ul id="reasonList"></ul>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>가격 차트</h3>
+                        <div id="priceChart" class="chart-box"></div>
+                    </div>
+
+                    <div class="dual-grid">
+                        <div class="chart-card">
+                            <h3>MACD</h3>
+                            <div id="macdChart" class="chart-box small"></div>
+                        </div>
+
+                        <div class="chart-card">
+                            <h3>RSI · 스토캐스틱</h3>
+                            <div id="oscillatorChart" class="chart-box small"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="section-title">핵심 지표</h3>
+                        <div id="indicatorGrid" class="indicator-grid"></div>
+                    </div>
+
+                    <p class="disclaimer">
+                        본 결과는 참고용 기술적 분석이며 실제 투자 판단과 책임은 본인에게 있습니다.
+                    </p>
+                </section>
             </div>
-            <p id="statusText" class="status-text">종목명 또는 코드 검색: 삼성전자, SK하이닉스, 005930, 000660</p>
-            <div id="krSuggestList" class="kr-suggest-list"></div>
-        </section>
 
-        <section class="recent-section">
-            <div class="recent-card">
-                <div class="recent-header">
-                    <h3>최근 검색 5개</h3>
-                    <button id="clearRecentBtn" type="button" class="clear-btn">전체삭제</button>
-                </div>
-                <div id="recentTickers" class="chip-list"></div>
-            </div>
-        </section>
+            <aside class="insight-sidebar">
+                <section class="insight-card">
+                    <div class="insight-card-head">
+                        <h3>Today</h3>
+                        <button id="refreshTodayBtn" class="mini-action-btn" type="button">새로고침</button>
+                    </div>
+                    <div id="todayPanel" class="stack-panel">
+                        <div class="empty-box">불러오는 중...</div>
+                    </div>
+                </section>
 
-        <section id="resultSection" class="result-section hidden">
-            <div class="summary-grid">
-                <div class="metric-card">
-                    <div class="label">종목</div>
-                    <div id="companyName" class="value large">-</div>
-                    <div id="tickerName" class="subvalue">-</div>
-                </div>
+                <section class="insight-card">
+                    <div class="insight-card-head">
+                        <h3>관심종목</h3>
+                        <button id="favoriteToggleBtn" class="mini-action-btn" type="button">현재 종목 저장</button>
+                    </div>
+                    <div id="watchlistPanel" class="stack-panel">
+                        <div class="empty-box">저장된 종목이 없습니다.</div>
+                    </div>
+                </section>
 
-                <div class="metric-card">
-                    <div class="label">매수 등급</div>
-                    <div id="gradeBadge" class="grade-badge">-</div>
-                    <div id="commentText" class="subvalue">-</div>
-                </div>
+                <section class="insight-card">
+                    <div class="insight-card-head">
+                        <h3>많이 본 종목</h3>
+                    </div>
+                    <div id="mostViewedPanel" class="stack-panel">
+                        <div class="empty-box">아직 데이터가 없습니다.</div>
+                    </div>
+                </section>
 
-                <div class="metric-card">
-                    <div class="label">종합 점수</div>
-                    <div id="scoreValue" class="value">-</div>
-                    <div class="subvalue">100점 기준</div>
-                </div>
+                <section class="insight-card">
+                    <div class="insight-card-head">
+                        <h3>신호 알림</h3>
+                    </div>
+                    <div id="alertPanel" class="stack-panel">
+                        <div class="empty-box">종목 분석 후 알림이 표시됩니다.</div>
+                    </div>
+                </section>
 
-                <div class="metric-card">
-                    <div class="label">현재가</div>
-                    <div id="priceValue" class="value">-</div>
-                    <div id="changeValue" class="subvalue">-</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="label">기준일</div>
-                    <div id="dateValue" class="value">-</div>
-                    <div class="subvalue">일봉 종가 기준</div>
-                </div>
-            </div>
-
-            <div class="reason-card">
-                <h3>분석 근거</h3>
-                <ul id="reasonList"></ul>
-            </div>
-
-            <div class="chart-card">
-                <h3>가격 차트</h3>
-                <div id="priceChart" class="chart-box"></div>
-            </div>
-
-            <div class="dual-grid">
-                <div class="chart-card">
-                    <h3>MACD</h3>
-                    <div id="macdChart" class="chart-box small"></div>
-                </div>
-
-                <div class="chart-card">
-                    <h3>RSI · 스토캐스틱</h3>
-                    <div id="oscillatorChart" class="chart-box small"></div>
-                </div>
-            </div>
-
-            <div>
-                <h3 class="section-title">핵심 지표</h3>
-                <div id="indicatorGrid" class="indicator-grid"></div>
-            </div>
-
-            <p class="disclaimer">
-                본 결과는 참고용 기술적 분석이며 실제 투자 판단과 책임은 본인에게 있습니다.
-            </p>
-        </section>
+                <section class="insight-card">
+                    <div class="insight-card-head">
+                        <h3>뉴스 요약</h3>
+                    </div>
+                    <div id="newsPanel" class="stack-panel">
+                        <div class="empty-box">종목 분석 후 뉴스를 불러옵니다.</div>
+                    </div>
+                </section>
+            </aside>
+        </div>
     </div>
 
     <script src="{{ url_for('static', filename='market.js') }}?v=20"></script>
+    <script src="{{ url_for('static', filename='dashboard.js') }}?v=1"></script>
+
     <footer class="site-footer">
         <small>Made by KIMBND</small>
         <small>모든문의 : <a href="mailto:coke_bom@naver.com">coke_bom@naver.com</a></small>
@@ -128,3 +183,5 @@
 </body>
 </html>
 
+<script src="{{ url_for('static', filename='market.js') }}?v=20"></script>
+<script src="{{ url_for('static', filename='dashboard.js') }}?v=1"></script>

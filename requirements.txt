@@ -3,4 +3,8 @@ pandas
 yfinance
 ta
 finance-datareader
+<<<<<<< HEAD
 gunicorn
+=======
+gunicorn
+>>>>>>> e67f94c (Integrate today news safari fixes)

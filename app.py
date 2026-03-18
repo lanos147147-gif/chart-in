@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify, request
+from datetime import datetime
 import time
 import pandas as pd
 import yfinance as yf
@@ -9,7 +10,6 @@ from ta.volatility import BollingerBands
 
 app = Flask(__name__)
 
-# 방문 수 카운터
 visit_count = 0
 
 TOP10_CANDIDATES = [
@@ -18,6 +18,19 @@ TOP10_CANDIDATES = [
     "MU", "ANET", "CRWD", "ARM", "ASML", "NOW", "AMAT", "LRCX", "INTC", "TXN",
     "JPM", "GS", "BAC", "WMT", "COST", "HD", "MCD", "KO", "PEP", "LLY",
     "UNH", "XOM", "CVX", "MRK", "ABBV", "PFE", "CAT", "GE", "DIS", "NKE"
+]
+
+KR_TODAY_CANDIDATES = [
+    {"ticker": "005930.KS", "name": "삼성전자", "market": "KOSPI"},
+    {"ticker": "000660.KS", "name": "SK하이닉스", "market": "KOSPI"},
+    {"ticker": "035420.KS", "name": "NAVER", "market": "KOSPI"},
+    {"ticker": "005380.KS", "name": "현대차", "market": "KOSPI"},
+    {"ticker": "051910.KS", "name": "LG화학", "market": "KOSPI"},
+    {"ticker": "068270.KS", "name": "셀트리온", "market": "KOSPI"},
+    {"ticker": "035720.KS", "name": "카카오", "market": "KOSPI"},
+    {"ticker": "207940.KS", "name": "삼성바이오로직스", "market": "KOSPI"},
+    {"ticker": "091990.KQ", "name": "셀트리온헬스케어", "market": "KOSDAQ"},
+    {"ticker": "196170.KQ", "name": "알테오젠", "market": "KOSDAQ"}
 ]
 
 _top10_cache = {
@@ -76,6 +89,51 @@ def normalize_market_to_suffix(market_value):
     if "KOSDAQ" in market:
         return "KQ", "KOSDAQ"
     return "KS", "KOSPI"
+
+
+def format_news_time(ts):
+    try:
+        return datetime.fromtimestamp(int(ts)).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return None
+
+
+def get_news_items(ticker, fallback_name=None, limit=5):
+    items = []
+
+    try:
+        raw_news = yf.Ticker(ticker).news or []
+    except Exception:
+        raw_news = []
+
+    for item in raw_news[:limit]:
+        title = item.get("title") or "제목 없음"
+        publisher = item.get("publisher") or item.get("provider") or ""
+        link = item.get("link") or ""
+        published_at = format_news_time(item.get("providerPublishTime"))
+        summary = item.get("summary") or ""
+        summary = str(summary).strip()
+        if len(summary) > 140:
+            summary = summary[:140].rstrip() + "..."
+
+        items.append({
+            "title": title,
+            "publisher": publisher,
+            "link": link,
+            "published_at": published_at,
+            "summary": summary
+        })
+
+    if not items and fallback_name:
+        items.append({
+            "title": f"{fallback_name} 관련 최신 뉴스가 아직 없습니다.",
+            "publisher": "",
+            "link": "",
+            "published_at": None,
+            "summary": "잠시 후 다시 확인해보세요."
+        })
+
+    return items
 
 
 def get_kr_universe():
@@ -413,6 +471,54 @@ def get_top10_strong_buy():
     return top10
 
 
+def build_today_card(data):
+    first_reason = data["reasons"][0] if data["reasons"] else "기술 지표 기반 종합 점수"
+    return {
+        "ticker": data["display_ticker"],
+        "company_name": data["company_name"],
+        "market": data["market"],
+        "score": data["summary"]["score"],
+        "grade": data["summary"]["grade"],
+        "close": data["summary"]["close"],
+        "change_percent": data["summary"]["change_percent"],
+        "reason": first_reason
+    }
+
+
+def get_today_us(limit=3):
+    results = []
+
+    for ticker in TOP10_CANDIDATES[:15]:
+        try:
+            data = analyze_stock(ticker, currency="USD", market_label="US")
+            results.append(build_today_card(data))
+        except Exception:
+            continue
+
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:limit]
+
+
+def get_today_kr(limit=3):
+    results = []
+
+    for item in KR_TODAY_CANDIDATES:
+        try:
+            data = analyze_stock(
+                item["ticker"],
+                company_name_override=item["name"],
+                display_ticker=item["ticker"],
+                currency="KRW",
+                market_label=item["market"]
+            )
+            results.append(build_today_card(data))
+        except Exception:
+            continue
+
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:limit]
+
+
 @app.route("/")
 def home():
     global visit_count
@@ -491,6 +597,60 @@ def api_top10():
     try:
         return jsonify({
             "items": get_top10_strong_buy()
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/today/<market>")
+def api_today(market):
+    try:
+        market = market.lower()
+
+        if market == "us":
+            items = get_today_us()
+        elif market == "kr":
+            items = get_today_kr()
+        else:
+            return jsonify({"error": "지원하지 않는 시장입니다."}), 400
+
+        return jsonify({
+            "market": market.upper(),
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "items": items
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/news/us/<ticker>")
+def api_news_us(ticker):
+    try:
+        result = analyze_stock(ticker, currency="USD", market_label="US")
+        return jsonify({
+            "ticker": result["display_ticker"],
+            "company_name": result["company_name"],
+            "items": get_news_items(result["ticker"], fallback_name=result["company_name"])
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/news/kr/<path:query>")
+def api_news_kr(query):
+    try:
+        market_hint = request.args.get("market", "KS").upper()
+        candidates = find_kr_candidates(query, market_hint=market_hint)
+
+        if not candidates:
+            return jsonify({"error": "일치하는 한국 종목을 찾지 못했습니다."}), 404
+
+        item = candidates[0]
+
+        return jsonify({
+            "ticker": item["display_ticker"],
+            "company_name": item["name"],
+            "items": get_news_items(item["yahoo_ticker"], fallback_name=item["name"])
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
