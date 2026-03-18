@@ -14,6 +14,11 @@ const dateValue = document.getElementById("dateValue");
 const reasonList = document.getElementById("reasonList");
 const indicatorGrid = document.getElementById("indicatorGrid");
 
+const recentTickersEl = document.getElementById("recentTickers");
+const clearRecentBtn = document.getElementById("clearRecentBtn");
+
+const RECENT_STORAGE_KEY = "chartin_recent_tickers";
+
 analyzeBtn.addEventListener("click", analyzeTicker);
 tickerInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -21,7 +26,12 @@ tickerInput.addEventListener("keydown", (e) => {
     }
 });
 
+if (clearRecentBtn) {
+    clearRecentBtn.addEventListener("click", clearRecentTickers);
+}
+
 window.addEventListener("load", () => {
+    renderRecentTickers();
     analyzeTicker();
 });
 
@@ -64,6 +74,89 @@ function gradeClassName(grade) {
     return map[grade] || "";
 }
 
+function getStoredRecentTickers() {
+    try {
+        const raw = localStorage.getItem(RECENT_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveStoredRecentTickers(list) {
+    localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(list));
+}
+
+function normalizeTicker(ticker) {
+    return ticker.trim().toUpperCase();
+}
+
+function addRecentTicker(ticker) {
+    const symbol = normalizeTicker(ticker);
+    if (!symbol) return;
+
+    let recent = getStoredRecentTickers();
+    recent = recent.filter(item => item !== symbol);
+    recent.unshift(symbol);
+    recent = recent.slice(0, 5);
+
+    saveStoredRecentTickers(recent);
+    renderRecentTickers();
+}
+
+function removeRecentTicker(ticker) {
+    const symbol = normalizeTicker(ticker);
+    const recent = getStoredRecentTickers().filter(item => item !== symbol);
+    saveStoredRecentTickers(recent);
+    renderRecentTickers();
+}
+
+function clearRecentTickers() {
+    localStorage.removeItem(RECENT_STORAGE_KEY);
+    renderRecentTickers();
+}
+
+function renderRecentTickers() {
+    if (!recentTickersEl) return;
+
+    recentTickersEl.innerHTML = "";
+    const recent = getStoredRecentTickers();
+
+    if (!recent.length) {
+        const span = document.createElement("span");
+        span.className = "empty-chip";
+        span.textContent = "아직 최근 검색이 없어요.";
+        recentTickersEl.appendChild(span);
+        return;
+    }
+
+    recent.forEach((ticker) => {
+        const wrap = document.createElement("div");
+        wrap.className = "ticker-chip-wrap";
+
+        const tickerBtn = document.createElement("button");
+        tickerBtn.className = "ticker-chip";
+        tickerBtn.type = "button";
+        tickerBtn.textContent = ticker;
+        tickerBtn.addEventListener("click", () => {
+            tickerInput.value = ticker;
+            analyzeTicker();
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "ticker-delete-btn";
+        deleteBtn.type = "button";
+        deleteBtn.textContent = "✕";
+        deleteBtn.addEventListener("click", () => {
+            removeRecentTicker(ticker);
+        });
+
+        wrap.appendChild(tickerBtn);
+        wrap.appendChild(deleteBtn);
+        recentTickersEl.appendChild(wrap);
+    });
+}
+
 async function analyzeTicker() {
     const ticker = tickerInput.value.trim().toUpperCase();
 
@@ -88,6 +181,8 @@ async function analyzeTicker() {
         renderPriceChart(data.chart, data.ticker);
         renderMacdChart(data.chart);
         renderOscillatorChart(data.chart);
+
+        addRecentTicker(data.ticker);
 
         resultSection.classList.remove("hidden");
         setStatus(`${data.company_name} (${data.ticker}) 분석 완료`);
