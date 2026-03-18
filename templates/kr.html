@@ -1,1 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3993361237656892" crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart-in | 한국주식</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20">
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body data-market="kr" data-top="false">
+    <div class="page">
+        <nav class="top-nav">
+            <a href="/" class="nav-logo">Chart-in</a>
+            <div class="nav-links">
+                <a href="/us">미국주식</a>
+                <a href="/kr" class="active">한국주식</a>
+            </div>
+        </nav>
+
+        <header class="hero inner">
+            <div class="hero-badge">PAGE 2 · KR STOCK ANALYZER</div>
+            <h1>한국주식 분석</h1>
+            <p class="subtitle">삼성전자, SK하이닉스, 네이버처럼 이름으로도 검색할 수 있어요</p>
+        </header>
+
+        <section class="coupang-section">
+            <iframe src="https://ads-partners.coupang.com/widgets.html?id=973273&template=carousel&trackingCode=AF7808428&subId=&width=680&height=140&tsource="
+                    width="680" height="140" frameborder="0" scrolling="no"
+                    referrerpolicy="unsafe-url" browsingtopics>
+            </iframe>
+        </section>
+
+        <section class="search-card">
+            <div class="search-row kr-row">
+                <select id="marketSelect" class="market-select">
+                    <option value="KS">코스피 (KS)</option>
+                    <option value="KQ">코스닥 (KQ)</option>
+                </select>
+                <input id="tickerInput" type="text" placeholder="예: 삼성전자, 하이닉스, 005930, 005930.KS" value="삼성전자">
+                <button id="analyzeBtn">분석하기</button>
+            </div>
+            <p id="statusText" class="status-text">종목명 또는 코드 검색: 삼성전자, SK하이닉스, 005930, 000660</p>
+            <div id="krSuggestList" class="kr-suggest-list"></div>
+        </section>
+
+        <section class="recent-section">
+            <div class="recent-card">
+                <div class="recent-header">
+                    <h3>최근 검색 5개</h3>
+                    <button id="clearRecentBtn" type="button" class="clear-btn">전체삭제</button>
+                </div>
+                <div id="recentTickers" class="chip-list"></div>
+            </div>
+        </section>
+
+        <section id="resultSection" class="result-section hidden">
+            <div class="summary-grid">
+                <div class="metric-card">
+                    <div class="label">종목</div>
+                    <div id="companyName" class="value large">-</div>
+                    <div id="tickerName" class="subvalue">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">매수 등급</div>
+                    <div id="gradeBadge" class="grade-badge">-</div>
+                    <div id="commentText" class="subvalue">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">종합 점수</div>
+                    <div id="scoreValue" class="value">-</div>
+                    <div class="subvalue">100점 기준</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">현재가</div>
+                    <div id="priceValue" class="value">-</div>
+                    <div id="changeValue" class="subvalue">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">기준일</div>
+                    <div id="dateValue" class="value">-</div>
+                    <div class="subvalue">일봉 종가 기준</div>
+                </div>
+            </div>
+
+            <div class="reason-card">
+                <h3>분석 근거</h3>
+                <ul id="reasonList"></ul>
+            </div>
+
+            <div class="chart-card">
+                <h3>가격 차트</h3>
+                <div id="priceChart" class="chart-box"></div>
+            </div>
+
+            <div class="dual-grid">
+                <div class="chart-card">
+                    <h3>MACD</h3>
+                    <div id="macdChart" class="chart-box small"></div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>RSI · 스토캐스틱</h3>
+                    <div id="oscillatorChart" class="chart-box small"></div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="section-title">핵심 지표</h3>
+                <div id="indicatorGrid" class="indicator-grid"></div>
+            </div>
+
+            <p class="disclaimer">
+                본 결과는 참고용 기술적 분석이며 실제 투자 판단과 책임은 본인에게 있습니다.
+            </p>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='market.js') }}?v=20"></script>
+    <footer class="site-footer">
+        <small>Made by KIMBND</small>
+        <small>모든문의 : <a href="mailto:coke_bom@naver.com">coke_bom@naver.com</a></small>
+    </footer>
+</body>
+</html>
 
