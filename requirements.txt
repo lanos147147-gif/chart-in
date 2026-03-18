@@ -1,7 +1,6 @@
 Flask
-yfinance
 pandas
+yfinance
 ta
+FinanceDataReader
 gunicorn
-pykrx
-setuptools<82

@@ -1,14 +1,16 @@
 from flask import Flask, render_template, jsonify, request
 import time
-from datetime import datetime
 import pandas as pd
 import yfinance as yf
+import FinanceDataReader as fdr
 from ta.trend import SMAIndicator, MACD
 from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.volatility import BollingerBands
-from pykrx import stock
 
 app = Flask(__name__)
+
+# 방문 수 카운터
+visit_count = 0
 
 TOP10_CANDIDATES = [
     "AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "TSLA", "AVGO", "AMD", "NFLX",
@@ -69,35 +71,43 @@ def get_kr_market_name(suffix):
     return "KOSDAQ" if suffix == "KQ" else "KOSPI"
 
 
+def normalize_market_to_suffix(market_value):
+    market = str(market_value or "").upper()
+    if "KOSDAQ" in market:
+        return "KQ", "KOSDAQ"
+    return "KS", "KOSPI"
+
+
 def get_kr_universe():
     now = time.time()
     if now - _kr_cache["timestamp"] < 86400 and _kr_cache["data"]:
         return _kr_cache["data"]
 
-    today = datetime.now().strftime("%Y%m%d")
     items = []
 
-    market_pairs = [
-        ("KOSPI", "KS"),
-        ("KOSDAQ", "KQ")
-    ]
+    try:
+        listing = fdr.StockListing("KRX")
+        listing = listing.fillna("")
 
-    for market_name, suffix in market_pairs:
-        try:
-            tickers = stock.get_market_ticker_list(date=today, market=market_name)
-            for code in tickers:
-                name = stock.get_market_ticker_name(code)
-                items.append({
-                    "code": code,
-                    "name": name,
-                    "name_norm": str(name).replace(" ", "").upper(),
-                    "suffix": suffix,
-                    "market": market_name,
-                    "yahoo_ticker": f"{code}.{suffix}",
-                    "display_ticker": f"{code}.{suffix}"
-                })
-        except Exception:
-            continue
+        for _, row in listing.iterrows():
+            code = str(row.get("Code", "")).strip().zfill(6)
+            name = str(row.get("Name", "")).strip()
+
+            if not code or not name:
+                continue
+
+            suffix, market_name = normalize_market_to_suffix(row.get("Market", ""))
+            items.append({
+                "code": code,
+                "name": name,
+                "name_norm": name.replace(" ", "").upper(),
+                "suffix": suffix,
+                "market": market_name,
+                "yahoo_ticker": f"{code}.{suffix}",
+                "display_ticker": f"{code}.{suffix}"
+            })
+    except Exception:
+        items = []
 
     _kr_cache["timestamp"] = now
     _kr_cache["data"] = items
@@ -405,7 +415,9 @@ def get_top10_strong_buy():
 
 @app.route("/")
 def home():
-    return render_template("home.html")
+    global visit_count
+    visit_count += 1
+    return render_template("home.html", visit_count=visit_count)
 
 
 @app.route("/us")
