@@ -107,11 +107,46 @@ def get_news_items(ticker, fallback_name=None, limit=5):
         raw_news = []
 
     for item in raw_news[:limit]:
-        title = item.get("title") or "제목 없음"
-        publisher = item.get("publisher") or item.get("provider") or ""
-        link = item.get("link") or ""
-        published_at = format_news_time(item.get("providerPublishTime"))
-        summary = item.get("summary") or ""
+        content = item.get("content") or {}
+
+        title = (
+            item.get("title")
+            or content.get("title")
+            or "제목 없음"
+        )
+
+        publisher = (
+            item.get("publisher")
+            or item.get("provider")
+            or content.get("publisher")
+            or ""
+        )
+
+        link = (
+            item.get("link")
+            or content.get("canonicalUrl", {}).get("url")
+            or content.get("clickThroughUrl", {}).get("url")
+            or ""
+        )
+
+        published_raw = (
+            item.get("providerPublishTime")
+            or content.get("pubDate")
+            or content.get("displayTime")
+        )
+
+        if isinstance(published_raw, (int, float)):
+            published_at = format_news_time(published_raw)
+        else:
+            published_at = str(published_raw) if published_raw else None
+
+        summary = (
+            item.get("summary")
+            or content.get("summary")
+            or content.get("description")
+            or ""
+        )
+
         summary = str(summary).strip()
         if len(summary) > 140:
             summary = summary[:140].rstrip() + "..."
@@ -134,6 +169,7 @@ def get_news_items(ticker, fallback_name=None, limit=5):
         })
 
     return items
+
 
 
 def get_kr_universe():
