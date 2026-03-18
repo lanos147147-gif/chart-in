@@ -3,3 +3,8 @@ yfinance
 pandas
 ta
 gunicorn
+Flask
+yfinance
+pandas
+ta
+gunicorn
