@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify
+import time
 import pandas as pd
 import yfinance as yf
 from ta.trend import SMAIndicator, MACD
@@ -6,6 +7,19 @@ from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.volatility import BollingerBands
 
 app = Flask(__name__)
+
+TOP10_CANDIDATES = [
+    "AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "TSLA", "AVGO", "AMD", "NFLX",
+    "PLTR", "SNOW", "CRM", "ORCL", "UBER", "SHOP", "QCOM", "ADBE", "INTU", "PANW",
+    "MU", "ANET", "CRWD", "ARM", "ASML", "NOW", "AMAT", "LRCX", "INTC", "TXN",
+    "JPM", "GS", "BAC", "WMT", "COST", "HD", "MCD", "KO", "PEP", "LLY",
+    "UNH", "XOM", "CVX", "MRK", "ABBV", "PFE", "CAT", "GE", "DIS", "NKE"
+]
+
+_top10_cache = {
+    "timestamp": 0,
+    "data": []
+}
 
 
 def safe_round(value, digits=2):
@@ -246,6 +260,41 @@ def analyze_stock(ticker):
     }
 
 
+def get_top10_strong_buy():
+    now = time.time()
+
+    if now - _top10_cache["timestamp"] < 1800 and _top10_cache["data"]:
+        return _top10_cache["data"]
+
+    results = []
+
+    for ticker in TOP10_CANDIDATES:
+        try:
+            data = analyze_stock(ticker)
+            grade = data["summary"]["grade"]
+            score = data["summary"]["score"]
+
+            if grade == "Strong Buy":
+                results.append({
+                    "ticker": data["ticker"],
+                    "company_name": data["company_name"],
+                    "score": score,
+                    "grade": grade,
+                    "comment": data["summary"]["comment"],
+                    "close": data["summary"]["close"],
+                    "change_percent": data["summary"]["change_percent"]
+                })
+        except Exception:
+            continue
+
+    results.sort(key=lambda x: x["score"], reverse=True)
+    top10 = results[:10]
+
+    _top10_cache["timestamp"] = now
+    _top10_cache["data"] = top10
+    return top10
+
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -256,6 +305,16 @@ def api_analyze(ticker):
     try:
         result = analyze_stock(ticker)
         return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/top10")
+def api_top10():
+    try:
+        return jsonify({
+            "items": get_top10_strong_buy()
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
