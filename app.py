@@ -1,10 +1,12 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import time
+from datetime import datetime
 import pandas as pd
 import yfinance as yf
 from ta.trend import SMAIndicator, MACD
 from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.volatility import BollingerBands
+from pykrx import stock
 
 app = Flask(__name__)
 
@@ -17,6 +19,11 @@ TOP10_CANDIDATES = [
 ]
 
 _top10_cache = {
+    "timestamp": 0,
+    "data": []
+}
+
+_kr_cache = {
     "timestamp": 0,
     "data": []
 }
@@ -38,9 +45,9 @@ def clean_series(series, digits=2):
     return result
 
 
-def get_company_name(stock, ticker):
+def get_company_name(stock_obj, ticker):
     try:
-        info = stock.info
+        info = stock_obj.info
         return info.get("shortName") or info.get("longName") or ticker
     except Exception:
         return ticker
@@ -58,14 +65,108 @@ def build_grade(score):
     return "Strong Sell", "매도 경고 신호가 강합니다."
 
 
-def analyze_stock(ticker):
+def get_kr_market_name(suffix):
+    return "KOSDAQ" if suffix == "KQ" else "KOSPI"
+
+
+def get_kr_universe():
+    now = time.time()
+    if now - _kr_cache["timestamp"] < 86400 and _kr_cache["data"]:
+        return _kr_cache["data"]
+
+    today = datetime.now().strftime("%Y%m%d")
+    items = []
+
+    market_pairs = [
+        ("KOSPI", "KS"),
+        ("KOSDAQ", "KQ")
+    ]
+
+    for market_name, suffix in market_pairs:
+        try:
+            tickers = stock.get_market_ticker_list(date=today, market=market_name)
+            for code in tickers:
+                name = stock.get_market_ticker_name(code)
+                items.append({
+                    "code": code,
+                    "name": name,
+                    "name_norm": str(name).replace(" ", "").upper(),
+                    "suffix": suffix,
+                    "market": market_name,
+                    "yahoo_ticker": f"{code}.{suffix}",
+                    "display_ticker": f"{code}.{suffix}"
+                })
+        except Exception:
+            continue
+
+    _kr_cache["timestamp"] = now
+    _kr_cache["data"] = items
+    return items
+
+
+def find_kr_candidates(query, market_hint="KS"):
+    raw = str(query or "").strip()
+    if not raw:
+        return []
+
+    universe = get_kr_universe()
+    upper = raw.upper()
+
+    if upper.endswith(".KS") or upper.endswith(".KQ"):
+        code, suffix = upper.split(".")
+        for item in universe:
+            if item["code"] == code and item["suffix"] == suffix:
+                return [item]
+        return [{
+            "code": code,
+            "name": code,
+            "name_norm": code,
+            "suffix": suffix,
+            "market": get_kr_market_name(suffix),
+            "yahoo_ticker": f"{code}.{suffix}",
+            "display_ticker": f"{code}.{suffix}"
+        }]
+
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if len(digits) == 6 and raw.replace(" ", "").replace(".", "").isdigit():
+        exact = [item for item in universe if item["code"] == digits]
+        if exact:
+            preferred = [item for item in exact if item["suffix"] == market_hint.upper()]
+            return preferred[:1] if preferred else exact[:1]
+
+        suffix = "KQ" if market_hint.upper() == "KQ" else "KS"
+        return [{
+            "code": digits,
+            "name": digits,
+            "name_norm": digits,
+            "suffix": suffix,
+            "market": get_kr_market_name(suffix),
+            "yahoo_ticker": f"{digits}.{suffix}",
+            "display_ticker": f"{digits}.{suffix}"
+        }]
+
+    q = raw.replace(" ", "").upper()
+    exact = [item for item in universe if item["name_norm"] == q]
+    starts = [item for item in universe if item["name_norm"].startswith(q) and item not in exact]
+    contains = [item for item in universe if q in item["name_norm"] and item not in exact and item not in starts]
+
+    return (exact + starts + contains)[:10]
+
+
+def analyze_stock(
+    ticker,
+    company_name_override=None,
+    display_ticker=None,
+    currency="USD",
+    market_label="US"
+):
     ticker = ticker.strip().upper()
 
     if not ticker:
         raise ValueError("티커를 입력하세요.")
 
-    stock = yf.Ticker(ticker)
-    df = stock.history(period="1y", interval="1d", auto_adjust=False)
+    stock_obj = yf.Ticker(ticker)
+    df = stock_obj.history(period="1y", interval="1d", auto_adjust=False)
 
     if df is None or df.empty:
         raise ValueError("데이터를 찾지 못했습니다. 티커를 다시 확인하세요.")
@@ -213,9 +314,15 @@ def analyze_stock(ticker):
 
     chart_df = df.tail(160)
 
+    company_name = company_name_override or get_company_name(stock_obj, ticker)
+    display_ticker = display_ticker or ticker
+
     return {
         "ticker": ticker,
-        "company_name": get_company_name(stock, ticker),
+        "display_ticker": display_ticker,
+        "company_name": company_name,
+        "market": market_label,
+        "currency": currency,
         "summary": {
             "grade": grade,
             "score": int(round(score)),
@@ -270,19 +377,20 @@ def get_top10_strong_buy():
 
     for ticker in TOP10_CANDIDATES:
         try:
-            data = analyze_stock(ticker)
+            data = analyze_stock(ticker, currency="USD", market_label="US")
             grade = data["summary"]["grade"]
             score = data["summary"]["score"]
 
             if grade == "Strong Buy":
                 results.append({
-                    "ticker": data["ticker"],
+                    "ticker": data["display_ticker"],
                     "company_name": data["company_name"],
                     "score": score,
                     "grade": grade,
                     "comment": data["summary"]["comment"],
                     "close": data["summary"]["close"],
-                    "change_percent": data["summary"]["change_percent"]
+                    "change_percent": data["summary"]["change_percent"],
+                    "currency": "USD"
                 })
         except Exception:
             continue
@@ -297,14 +405,71 @@ def get_top10_strong_buy():
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("home.html")
+
+
+@app.route("/us")
+def us_page():
+    return render_template("us.html")
+
+
+@app.route("/kr")
+def kr_page():
+    return render_template("kr.html")
 
 
 @app.route("/api/analyze/<ticker>")
-def api_analyze(ticker):
+def api_analyze_legacy(ticker):
     try:
-        result = analyze_stock(ticker)
+        result = analyze_stock(ticker, currency="USD", market_label="US")
         return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/analyze/us/<ticker>")
+def api_analyze_us(ticker):
+    try:
+        result = analyze_stock(ticker, currency="USD", market_label="US")
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/analyze/kr/<path:query>")
+def api_analyze_kr(query):
+    try:
+        market_hint = request.args.get("market", "KS").upper()
+        candidates = find_kr_candidates(query, market_hint=market_hint)
+
+        if not candidates:
+            return jsonify({"error": "일치하는 한국 종목을 찾지 못했습니다."}), 404
+
+        if len(candidates) > 1:
+            return jsonify({
+                "need_select": True,
+                "matches": [
+                    {
+                        "code": item["code"],
+                        "name": item["name"],
+                        "suffix": item["suffix"],
+                        "market": item["market"],
+                        "display_ticker": item["display_ticker"]
+                    }
+                    for item in candidates
+                ]
+            })
+
+        item = candidates[0]
+        result = analyze_stock(
+            item["yahoo_ticker"],
+            company_name_override=item["name"],
+            display_ticker=item["display_ticker"],
+            currency="KRW",
+            market_label=item["market"]
+        )
+        return jsonify(result)
+
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
