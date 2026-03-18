@@ -182,7 +182,7 @@ async function analyzeTicker() {
         renderMacdChart(data.chart);
         renderOscillatorChart(data.chart);
 
-        addRecentTicker(data.ticker);
+        addRecentTicker(data.ticker || ticker);
 
         resultSection.classList.remove("hidden");
         setStatus(`${data.company_name} (${data.ticker}) 분석 완료`);
