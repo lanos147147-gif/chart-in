@@ -1,6 +1,9 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, make_response
 from datetime import datetime
 import time
+import sqlite3
+import uuid
+import hashlib
 import pandas as pd
 import yfinance as yf
 import FinanceDataReader as fdr
@@ -11,7 +14,8 @@ from ta.volatility import BollingerBands
 
 app = Flask(__name__)
 
-visit_count = 0
+DB_PATH = "chartin_visits.db"
+VISIT_INTERVAL_SECONDS = 30 * 60
 
 TOP10_CANDIDATES = [
     "AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "TSLA", "AVGO", "AMD", "NFLX",
@@ -36,8 +40,172 @@ KR_TODAY_CANDIDATES = [
 
 _top10_cache = {"timestamp": 0, "data": []}
 _kr_cache = {"timestamp": 0, "data": []}
-
 translator = GoogleTranslator(source="auto", target="ko")
+
+
+def get_db_conn():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_visit_db():
+    conn = get_db_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS visit_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            visitor_key TEXT NOT NULL,
+            visited_at INTEGER NOT NULL,
+            visit_date TEXT NOT NULL
+        )
+    """)
+
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_visit_events_key_time
+        ON visit_events(visitor_key, visited_at)
+    """)
+
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_visit_events_date
+        ON visit_events(visit_date)
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+def get_client_ip():
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.remote_addr or "0.0.0.0"
+
+
+def make_visitor_key(visitor_id):
+    ip = get_client_ip()
+    user_agent = request.headers.get("User-Agent", "")[:200]
+    raw = f"{visitor_id}|{ip}|{user_agent}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def record_visit(visitor_id):
+    now_ts = int(time.time())
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    visitor_key = make_visitor_key(visitor_id)
+
+    conn = get_db_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT visited_at
+        FROM visit_events
+        WHERE visitor_key = ?
+        ORDER BY visited_at DESC
+        LIMIT 1
+    """, (visitor_key,))
+    row = cur.fetchone()
+
+    should_count = False
+    if row is None:
+        should_count = True
+    else:
+        last_seen = int(row["visited_at"])
+        if now_ts - last_seen >= VISIT_INTERVAL_SECONDS:
+            should_count = True
+
+    if should_count:
+        cur.execute("""
+            INSERT INTO visit_events (visitor_key, visited_at, visit_date)
+            VALUES (?, ?, ?)
+        """, (visitor_key, now_ts, today_str))
+        conn.commit()
+
+    cur.execute("SELECT COUNT(*) AS cnt FROM visit_events")
+    total_count = int(cur.fetchone()["cnt"])
+
+    cur.execute("""
+        SELECT COUNT(*) AS cnt
+        FROM visit_events
+        WHERE visit_date = ?
+    """, (today_str,))
+    today_count = int(cur.fetchone()["cnt"])
+
+    cur.execute("""
+        SELECT COUNT(DISTINCT visitor_key) AS cnt
+        FROM visit_events
+        WHERE visit_date = ?
+    """, (today_str,))
+    today_unique = int(cur.fetchone()["cnt"])
+
+    conn.close()
+
+    return {
+        "total": total_count,
+        "today": today_count,
+        "today_unique": today_unique,
+        "counted": should_count
+    }
+
+
+def get_visit_stats():
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    conn = get_db_conn()
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) AS cnt FROM visit_events")
+    total_count = int(cur.fetchone()["cnt"])
+
+    cur.execute("""
+        SELECT COUNT(*) AS cnt
+        FROM visit_events
+        WHERE visit_date = ?
+    """, (today_str,))
+    today_count = int(cur.fetchone()["cnt"])
+
+    cur.execute("""
+        SELECT COUNT(DISTINCT visitor_key) AS cnt
+        FROM visit_events
+        WHERE visit_date = ?
+    """, (today_str,))
+    today_unique = int(cur.fetchone()["cnt"])
+
+    conn.close()
+
+    return {
+        "total": total_count,
+        "today": today_count,
+        "today_unique": today_unique
+    }
+
+
+def render_page_with_visit(template_name, **context):
+    visitor_id = request.cookies.get("chartin_vid")
+    is_new_cookie = False
+
+    if not visitor_id:
+        visitor_id = str(uuid.uuid4())
+        is_new_cookie = True
+
+    visit_stats = record_visit(visitor_id)
+
+    merged_context = {
+        **context,
+        "visit_stats": visit_stats
+    }
+
+    response = make_response(render_template(template_name, **merged_context))
+
+    if is_new_cookie:
+        response.set_cookie(
+            "chartin_vid",
+            visitor_id,
+            max_age=60 * 60 * 24 * 365 * 2,
+            samesite="Lax"
+        )
+
+    return response
 
 
 def safe_round(value, digits=2):
@@ -333,7 +501,6 @@ def analyze_stock(
     df["STOCH_D"] = stoch.stoch_signal()
 
     df["VOL_MA20"] = volume.rolling(window=20).mean()
-
     df = df.dropna().reset_index(drop=True)
 
     if len(df) < 3:
@@ -438,7 +605,6 @@ def analyze_stock(
         change_percent = ((latest["Close"] - prev["Close"]) / prev["Close"]) * 100
 
     chart_df = df.tail(160)
-
     company_name = company_name_override or get_company_name(stock_obj, ticker)
     display_ticker = display_ticker or ticker
 
@@ -578,19 +744,25 @@ def get_today_kr(limit=3):
 
 @app.route("/")
 def home():
-    global visit_count
-    visit_count += 1
-    return render_template("home.html", visit_count=visit_count)
+    return render_page_with_visit("home.html")
 
 
 @app.route("/us")
 def us_page():
-    return render_template("us.html")
+    return render_page_with_visit("us.html")
 
 
 @app.route("/kr")
 def kr_page():
-    return render_template("kr.html")
+    return render_page_with_visit("kr.html")
+
+
+@app.route("/api/visit-stats")
+def api_visit_stats():
+    try:
+        return jsonify(get_visit_stats())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route("/api/analyze/<ticker>")
@@ -712,4 +884,7 @@ def api_news_kr(query):
 
 
 if __name__ == "__main__":
+    init_visit_db()
     app.run(debug=True)
+else:
+    init_visit_db()

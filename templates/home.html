@@ -8,9 +8,21 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20">
 </head>
 <body>
-    <div class="top-visit-counter">
-        방문수 {{ visit_count }}
+   <section class="visit-strip">
+    <div class="visit-pill">
+        <span class="visit-label">전체 방문</span>
+        <strong>{{ visit_stats.total }}</strong>
     </div>
+    <div class="visit-pill">
+        <span class="visit-label">오늘 방문</span>
+        <strong>{{ visit_stats.today }}</strong>
+    </div>
+    <div class="visit-pill">
+        <span class="visit-label">오늘 실방문</span>
+        <strong>{{ visit_stats.today_unique }}</strong>
+    </div>
+</section>
+
 
     <div class="page">
         <header class="hero">

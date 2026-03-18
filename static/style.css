@@ -1363,3 +1363,49 @@ body {
         min-height: 300px;
     }
 }
+.visit-strip {
+    width: min(1120px, calc(100% - 32px));
+    margin: 14px auto 0;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.visit-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.visit-label {
+    color: #64748b;
+    font-weight: 600;
+}
+
+.visit-pill strong {
+    color: #111827;
+    font-size: 15px;
+}
+
+@media (max-width: 640px) {
+    .visit-strip {
+        gap: 8px;
+    }
+
+    .visit-pill {
+        padding: 9px 13px;
+        font-size: 13px;
+    }
+
+    .visit-pill strong {
+        font-size: 14px;
+    }
+}
