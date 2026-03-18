@@ -4,3 +4,4 @@ pandas
 ta
 gunicorn
 pykrx
+setuptools<82
