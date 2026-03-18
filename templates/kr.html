@@ -3,9 +3,9 @@
 <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3993361237656892" crossorigin="anonymous"></script>
     <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Chart-in | 한국주식</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=21">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 <body data-market="kr" data-top="false">
@@ -94,12 +94,12 @@
                         <ul id="reasonList"></ul>
                     </div>
 
-                    <div class="chart-card">
-                        <h3>가격 차트</h3>
-                        <div id="priceChart" class="chart-box"></div>
-                    </div>
+                    <div class="chart-stack">
+                        <div class="chart-card">
+                            <h3>가격 차트</h3>
+                            <div id="priceChart" class="chart-box"></div>
+                        </div>
 
-                    <div class="dual-grid">
                         <div class="chart-card">
                             <h3>MACD</h3>
                             <div id="macdChart" class="chart-box small"></div>
@@ -177,8 +177,8 @@
         <small>Made by KIMBND</small>
         <small>모든문의 : <a href="mailto:coke_bom@naver.com">coke_bom@naver.com</a></small>
     </footer>
+
+    <script src="{{ url_for('static', filename='market.js') }}?v=21"></script>
+    <script src="{{ url_for('static', filename='dashboard.js') }}?v=2"></script>
 </body>
 </html>
-
-<script src="{{ url_for('static', filename='market.js') }}?v=20"></script>
-<script src="{{ url_for('static', filename='dashboard.js') }}?v=1"></script>

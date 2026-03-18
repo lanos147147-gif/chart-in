@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Chart-in | 미국주식</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=21">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 <body data-market="us" data-top="true">
@@ -98,12 +98,12 @@
                         <ul id="reasonList"></ul>
                     </div>
 
-                    <div class="chart-card">
-                        <h3>가격 차트</h3>
-                        <div id="priceChart" class="chart-box"></div>
-                    </div>
+                    <div class="chart-stack">
+                        <div class="chart-card">
+                            <h3>가격 차트</h3>
+                            <div id="priceChart" class="chart-box"></div>
+                        </div>
 
-                    <div class="dual-grid">
                         <div class="chart-card">
                             <h3>MACD</h3>
                             <div id="macdChart" class="chart-box small"></div>
@@ -176,13 +176,13 @@
             </aside>
         </div>
     </div>
-    
+
     <footer class="site-footer">
         <small>Made by KIMBND</small>
         <small>모든문의 : <a href="mailto:coke_bom@naver.com">coke_bom@naver.com</a></small>
     </footer>
+
+    <script src="{{ url_for('static', filename='market.js') }}?v=21"></script>
+    <script src="{{ url_for('static', filename='dashboard.js') }}?v=2"></script>
 </body>
 </html>
-
-<script src="{{ url_for('static', filename='market.js') }}?v=20"></script>
-<script src="{{ url_for('static', filename='dashboard.js') }}?v=1"></script>

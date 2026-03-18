@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify, request
+from deep_translator import GoogleTranslator
 from datetime import datetime
 import time
 import pandas as pd
@@ -97,6 +98,33 @@ def format_news_time(ts):
     except Exception:
         return None
 
+def translate_ko(text):
+    text = str(text or "").strip()
+    if not text:
+        return ""
+    try:
+        return GoogleTranslator(source="auto", target="ko").translate(text)
+    except Exception:
+        return text
+
+
+def format_news_datetime(value):
+    if value is None:
+        return None
+
+    try:
+        if isinstance(value, (int, float)):
+            return datetime.fromtimestamp(int(value)).strftime("%Y-%m-%d %H:%M")
+
+        text = str(value).strip()
+        if not text:
+            return None
+
+        text = text.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(text)
+        return dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return str(value)
 
 def get_news_items(ticker, fallback_name=None, limit=5):
     items = []
@@ -109,7 +137,7 @@ def get_news_items(ticker, fallback_name=None, limit=5):
     for item in raw_news[:limit]:
         content = item.get("content") or {}
 
-        title = (
+        title_en = (
             item.get("title")
             or content.get("title")
             or "제목 없음"
@@ -119,7 +147,7 @@ def get_news_items(ticker, fallback_name=None, limit=5):
             item.get("publisher")
             or item.get("provider")
             or content.get("publisher")
-            or ""
+            or "Yahoo Finance"
         )
 
         link = (
@@ -135,28 +163,30 @@ def get_news_items(ticker, fallback_name=None, limit=5):
             or content.get("displayTime")
         )
 
-        if isinstance(published_raw, (int, float)):
-            published_at = format_news_time(published_raw)
-        else:
-            published_at = str(published_raw) if published_raw else None
+        published_at = format_news_datetime(published_raw)
 
-        summary = (
+        summary_en = (
             item.get("summary")
             or content.get("summary")
             or content.get("description")
             or ""
         )
 
-        summary = str(summary).strip()
-        if len(summary) > 140:
-            summary = summary[:140].rstrip() + "..."
+        summary_en = str(summary_en).strip()
+        if len(summary_en) > 180:
+            summary_en = summary_en[:180].rstrip() + "..."
+
+        title_ko = translate_ko(title_en)
+        summary_ko = translate_ko(summary_en) if summary_en else ""
 
         items.append({
-            "title": title,
+            "title": title_ko or title_en,
             "publisher": publisher,
             "link": link,
             "published_at": published_at,
-            "summary": summary
+            "summary": summary_ko or summary_en,
+            "title_en": title_en,
+            "summary_en": summary_en
         })
 
     if not items and fallback_name:
@@ -165,7 +195,9 @@ def get_news_items(ticker, fallback_name=None, limit=5):
             "publisher": "",
             "link": "",
             "published_at": None,
-            "summary": "잠시 후 다시 확인해보세요."
+            "summary": "잠시 후 다시 확인해보세요.",
+            "title_en": "",
+            "summary_en": ""
         })
 
     return items
