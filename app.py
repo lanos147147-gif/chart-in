@@ -25,6 +25,36 @@ TOP10_CANDIDATES = [
     "UNH", "XOM", "CVX", "MRK", "ABBV", "PFE", "CAT", "GE", "DIS", "NKE"
 ]
 
+KR_NAME_MAP = {
+    "삼성전자": {"code": "005930", "suffix": "KS", "market": "KOSPI", "label": "삼성전자"},
+    "삼전": {"code": "005930", "suffix": "KS", "market": "KOSPI", "label": "삼성전자"},
+    "sk하이닉스": {"code": "000660", "suffix": "KS", "market": "KOSPI", "label": "SK하이닉스"},
+    "하이닉스": {"code": "000660", "suffix": "KS", "market": "KOSPI", "label": "SK하이닉스"},
+    "네이버": {"code": "035420", "suffix": "KS", "market": "KOSPI", "label": "NAVER"},
+    "naver": {"code": "035420", "suffix": "KS", "market": "KOSPI", "label": "NAVER"},
+    "카카오": {"code": "035720", "suffix": "KS", "market": "KOSPI", "label": "카카오"},
+    "현대차": {"code": "005380", "suffix": "KS", "market": "KOSPI", "label": "현대차"},
+    "기아": {"code": "000270", "suffix": "KS", "market": "KOSPI", "label": "기아"},
+    "셀트리온": {"code": "068270", "suffix": "KS", "market": "KOSPI", "label": "셀트리온"},
+    "lg에너지솔루션": {"code": "373220", "suffix": "KS", "market": "KOSPI", "label": "LG에너지솔루션"},
+    "삼성바이오로직스": {"code": "207940", "suffix": "KS", "market": "KOSPI", "label": "삼성바이오로직스"},
+    "kb금융": {"code": "105560", "suffix": "KS", "market": "KOSPI", "label": "KB금융"},
+    "신한지주": {"code": "055550", "suffix": "KS", "market": "KOSPI", "label": "신한지주"},
+    "포스코홀딩스": {"code": "005490", "suffix": "KS", "market": "KOSPI", "label": "POSCO홀딩스"},
+    "포스코": {"code": "005490", "suffix": "KS", "market": "KOSPI", "label": "POSCO홀딩스"},
+    "한화에어로스페이스": {"code": "012450", "suffix": "KS", "market": "KOSPI", "label": "한화에어로스페이스"},
+    "알테오젠": {"code": "196170", "suffix": "KQ", "market": "KOSDAQ", "label": "알테오젠"},
+    "에코프로비엠": {"code": "247540", "suffix": "KQ", "market": "KOSDAQ", "label": "에코프로비엠"},
+    "에코프로": {"code": "086520", "suffix": "KQ", "market": "KOSDAQ", "label": "에코프로"},
+    "hlb": {"code": "028300", "suffix": "KQ", "market": "KOSDAQ", "label": "HLB"},
+    "레인보우로보틱스": {"code": "277810", "suffix": "KQ", "market": "KOSDAQ", "label": "레인보우로보틱스"},
+    "펩트론": {"code": "087010", "suffix": "KQ", "market": "KOSDAQ", "label": "펩트론"},
+    "파마리서치": {"code": "214450", "suffix": "KQ", "market": "KOSDAQ", "label": "파마리서치"},
+    "리가켐바이오": {"code": "141080", "suffix": "KQ", "market": "KOSDAQ", "label": "리가켐바이오"},
+    "삼천당제약": {"code": "000250", "suffix": "KQ", "market": "KOSDAQ", "label": "삼천당제약"},
+    "클래시스": {"code": "214150", "suffix": "KQ", "market": "KOSDAQ", "label": "클래시스"},
+}
+
 KR_TODAY_CANDIDATES = [
     {"ticker": "005930.KS", "name": "삼성전자", "market": "KOSPI"},
     {"ticker": "000660.KS", "name": "SK하이닉스", "market": "KOSPI"},
@@ -35,11 +65,62 @@ KR_TODAY_CANDIDATES = [
     {"ticker": "035720.KS", "name": "카카오", "market": "KOSPI"},
     {"ticker": "207940.KS", "name": "삼성바이오로직스", "market": "KOSPI"},
     {"ticker": "091990.KQ", "name": "셀트리온헬스케어", "market": "KOSDAQ"},
-    {"ticker": "196170.KQ", "name": "알테오젠", "market": "KOSDAQ"}
+    {"ticker": "196170.KQ", "name": "알테오젠", "market": "KOSDAQ"},
+]
+
+NASDAQ_TOP10_CANDIDATES = [
+    {"ticker": "AAPL", "name": "Apple", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "MSFT", "name": "Microsoft", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "NVDA", "name": "NVIDIA", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "AMZN", "name": "Amazon", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "META", "name": "Meta", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "GOOGL", "name": "Alphabet", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "TSLA", "name": "Tesla", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "AVGO", "name": "Broadcom", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "AMD", "name": "AMD", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "NFLX", "name": "Netflix", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "PLTR", "name": "Palantir", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "SNOW", "name": "Snowflake", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "QCOM", "name": "Qualcomm", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "ADBE", "name": "Adobe", "market": "NASDAQ", "currency": "USD"},
+    {"ticker": "INTU", "name": "Intuit", "market": "NASDAQ", "currency": "USD"},
+]
+
+KOSPI_TOP10_CANDIDATES = [
+    {"ticker": "005930.KS", "name": "삼성전자", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "000660.KS", "name": "SK하이닉스", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "035420.KS", "name": "NAVER", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "005380.KS", "name": "현대차", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "000270.KS", "name": "기아", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "373220.KS", "name": "LG에너지솔루션", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "207940.KS", "name": "삼성바이오로직스", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "068270.KS", "name": "셀트리온", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "105560.KS", "name": "KB금융", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "055550.KS", "name": "신한지주", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "005490.KS", "name": "POSCO홀딩스", "market": "KOSPI", "currency": "KRW"},
+    {"ticker": "012450.KS", "name": "한화에어로스페이스", "market": "KOSPI", "currency": "KRW"},
+]
+
+KOSDAQ_TOP10_CANDIDATES = [
+    {"ticker": "196170.KQ", "name": "알테오젠", "market": "KOSDAQ", "currency": "KRW"},
+    {"ticker": "247540.KQ", "name": "에코프로비엠", "market": "KOSDAQ", "currency": "KRW"},
+    {"ticker": "086520.KQ", "name": "에코프로", "market": "KOSDAQ", "currency": "KRW"},
+    {"ticker": "028300.KQ", "name": "HLB", "market": "KOSDAQ", "currency": "KRW"},
+    {"ticker": "277810.KQ", "name": "레인보우로보틱스", "market": "KOSDAQ", "currency": "KRW"},
+    {"ticker": "087010.KQ", "name": "펩트론", "market": "KOSDAQ", "currency": "KRW"},
+    {"ticker": "214450.KQ", "name": "파마리서치", "market": "KOSDAQ", "currency": "KRW"},
+    {"ticker": "141080.KQ", "name": "리가켐바이오", "market": "KOSDAQ", "currency": "KRW"},
+    {"ticker": "000250.KQ", "name": "삼천당제약", "market": "KOSDAQ", "currency": "KRW"},
+    {"ticker": "214150.KQ", "name": "클래시스", "market": "KOSDAQ", "currency": "KRW"},
 ]
 
 _top10_cache = {"timestamp": 0, "data": []}
 _kr_cache = {"timestamp": 0, "data": []}
+_market_top_cache = {
+    "nasdaq": {"timestamp": 0, "data": []},
+    "kospi": {"timestamp": 0, "data": []},
+    "kosdaq": {"timestamp": 0, "data": []},
+}
 translator = GoogleTranslator(source="auto", target="ko")
 
 
@@ -397,48 +478,63 @@ def get_kr_universe():
     return items
 
 
+def make_kr_item(code, suffix, market, name=None):
+    name = name or code
+    return {
+        "code": code,
+        "name": name,
+        "name_norm": str(name).replace(" ", "").upper(),
+        "suffix": suffix,
+        "market": market,
+        "yahoo_ticker": f"{code}.{suffix}",
+        "display_ticker": f"{code}.{suffix}"
+    }
+
+
 def find_kr_candidates(query, market_hint="KS"):
     raw = str(query or "").strip()
     if not raw:
         return []
 
-    universe = get_kr_universe()
     upper = raw.upper()
 
     if upper.endswith(".KS") or upper.endswith(".KQ"):
         code, suffix = upper.split(".")
-        for item in universe:
-            if item["code"] == code and item["suffix"] == suffix:
-                return [item]
-        return [{
-            "code": code,
-            "name": code,
-            "name_norm": code,
-            "suffix": suffix,
-            "market": get_kr_market_name(suffix),
-            "yahoo_ticker": f"{code}.{suffix}",
-            "display_ticker": f"{code}.{suffix}"
-        }]
+        market = get_kr_market_name(suffix)
+        return [make_kr_item(code, suffix, market, code)]
 
     digits = "".join(ch for ch in raw if ch.isdigit())
     if len(digits) == 6 and raw.replace(" ", "").replace(".", "").isdigit():
-        exact = [item for item in universe if item["code"] == digits]
-        if exact:
-            preferred = [item for item in exact if item["suffix"] == market_hint.upper()]
-            return preferred[:1] if preferred else exact[:1]
-
         suffix = "KQ" if market_hint.upper() == "KQ" else "KS"
-        return [{
-            "code": digits,
-            "name": digits,
-            "name_norm": digits,
-            "suffix": suffix,
-            "market": get_kr_market_name(suffix),
-            "yahoo_ticker": f"{digits}.{suffix}",
-            "display_ticker": f"{digits}.{suffix}"
-        }]
+        market = get_kr_market_name(suffix)
+        return [make_kr_item(digits, suffix, market, digits)]
 
+    key = raw.replace(" ", "").lower()
+
+    exact = []
+    partial = []
+    used = set()
+
+    for name, item in KR_NAME_MAP.items():
+        name_key = name.replace(" ", "").lower()
+        built = make_kr_item(item["code"], item["suffix"], item["market"], item["label"])
+        unique_key = (built["code"], built["suffix"])
+
+        if key == name_key:
+            if unique_key not in used:
+                exact.append(built)
+                used.add(unique_key)
+        elif key in name_key:
+            if unique_key not in used:
+                partial.append(built)
+                used.add(unique_key)
+
+    if exact or partial:
+        return exact + partial[:10]
+
+    universe = get_kr_universe()
     q = raw.replace(" ", "").upper()
+
     exact = [item for item in universe if item["name_norm"] == q]
     starts = [item for item in universe if item["name_norm"].startswith(q) and item not in exact]
     contains = [item for item in universe if q in item["name_norm"] and item not in exact and item not in starts]
@@ -742,6 +838,158 @@ def get_today_kr(limit=3):
     return results[:limit]
 
 
+def looks_like_kr_query(text):
+    text = str(text or "").strip()
+    if not text:
+        return False
+
+    if text.upper().endswith(".KS") or text.upper().endswith(".KQ"):
+        return True
+
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if len(digits) == 6:
+        return True
+
+    return any("가" <= ch <= "힣" for ch in text)
+
+
+def format_market_cap(value):
+    try:
+        value = float(value)
+    except Exception:
+        return "-"
+
+    if value >= 1_000_000_000_000:
+        return f"{value / 1_000_000_000_000:.2f}T"
+    if value >= 1_000_000_000:
+        return f"{value / 1_000_000_000:.2f}B"
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.2f}M"
+    return f"{value:,.0f}"
+
+
+def resolve_compare_target(raw):
+    query = str(raw or "").strip()
+    if not query:
+        raise ValueError("비교할 종목을 입력하세요.")
+
+    if looks_like_kr_query(query):
+        market_hint = "KQ" if query.upper().endswith(".KQ") else "KS"
+        candidates = find_kr_candidates(query, market_hint=market_hint)
+        if not candidates:
+            raise ValueError(f"한국 종목을 찾지 못했습니다: {query}")
+
+        item = candidates[0]
+        return {
+            "ticker": item["yahoo_ticker"],
+            "display_ticker": item["display_ticker"],
+            "company_name_override": item["name"],
+            "currency": "KRW",
+            "market_label": item["market"]
+        }
+
+    return {
+        "ticker": query.upper(),
+        "display_ticker": query.upper(),
+        "company_name_override": None,
+        "currency": "USD",
+        "market_label": "NASDAQ"
+    }
+
+
+def get_company_profile_block(ticker, company_name_override=None, display_ticker=None, currency="USD", market_label="US"):
+    stock_obj = yf.Ticker(ticker)
+
+    try:
+        info = stock_obj.info or {}
+    except Exception:
+        info = {}
+
+    analysis = analyze_stock(
+        ticker,
+        company_name_override=company_name_override,
+        display_ticker=display_ticker,
+        currency=currency,
+        market_label=market_label
+    )
+
+    company_name = analysis["company_name"]
+    summary_en = str(
+        info.get("longBusinessSummary")
+        or info.get("description")
+        or ""
+    ).strip()
+
+    summary_en = summary_en[:500] if summary_en else ""
+    summary_ko = translate_ko(summary_en) if summary_en else ""
+
+    return {
+        "ticker": analysis["ticker"],
+        "display_ticker": analysis["display_ticker"],
+        "company_name": company_name,
+        "market": analysis["market"],
+        "currency": analysis["currency"],
+        "summary": analysis["summary"],
+        "indicators": analysis["indicators"],
+        "profile": {
+            "sector": info.get("sector") or "-",
+            "industry": info.get("industry") or "-",
+            "website": info.get("website") or "",
+            "country": info.get("country") or "-",
+            "market_cap": info.get("marketCap"),
+            "market_cap_text": format_market_cap(info.get("marketCap")),
+            "business_summary": summary_ko or summary_en or "회사 설명이 없습니다."
+        },
+        "news": get_news_items(analysis["ticker"], fallback_name=company_name, limit=5)
+    }
+
+
+def build_rank_card(data):
+    first_reason = data["reasons"][0] if data["reasons"] else "기술 지표 기반 종합 점수"
+    return {
+        "ticker": data["display_ticker"],
+        "company_name": data["company_name"],
+        "market": data["market"],
+        "currency": data["currency"],
+        "score": data["summary"]["score"],
+        "grade": data["summary"]["grade"],
+        "close": data["summary"]["close"],
+        "change_percent": data["summary"]["change_percent"],
+        "comment": data["summary"]["comment"],
+        "reason": first_reason
+    }
+
+
+def get_market_top10(cache_key, candidates):
+    cache = _market_top_cache[cache_key]
+    now = time.time()
+
+    if now - cache["timestamp"] < 1800 and cache["data"]:
+        return cache["data"]
+
+    results = []
+
+    for item in candidates:
+        try:
+            data = analyze_stock(
+                item["ticker"],
+                company_name_override=item["name"],
+                display_ticker=item["ticker"],
+                currency=item["currency"],
+                market_label=item["market"]
+            )
+            results.append(build_rank_card(data))
+        except Exception:
+            continue
+
+    results.sort(key=lambda x: x["score"], reverse=True)
+    top10 = results[:10]
+
+    cache["timestamp"] = now
+    cache["data"] = top10
+    return top10
+
+
 @app.route("/")
 def home():
     return render_page_with_visit("home.html")
@@ -755,6 +1003,11 @@ def us_page():
 @app.route("/kr")
 def kr_page():
     return render_page_with_visit("kr.html")
+
+
+@app.route("/compare")
+def compare_page():
+    return render_page_with_visit("compare.html")
 
 
 @app.route("/api/visit-stats")
@@ -824,7 +1077,40 @@ def api_analyze_kr(query):
 @app.route("/api/top10")
 def api_top10():
     try:
-        return jsonify({"items": get_top10_strong_buy()})
+        return jsonify({"items": get_market_top10("nasdaq", NASDAQ_TOP10_CANDIDATES)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/top10/nasdaq")
+def api_top10_nasdaq():
+    try:
+        return jsonify({
+            "market": "NASDAQ",
+            "items": get_market_top10("nasdaq", NASDAQ_TOP10_CANDIDATES)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/top10/kospi")
+def api_top10_kospi():
+    try:
+        return jsonify({
+            "market": "KOSPI",
+            "items": get_market_top10("kospi", KOSPI_TOP10_CANDIDATES)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/top10/kosdaq")
+def api_top10_kosdaq():
+    try:
+        return jsonify({
+            "market": "KOSDAQ",
+            "items": get_market_top10("kosdaq", KOSDAQ_TOP10_CANDIDATES)
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -878,6 +1164,38 @@ def api_news_kr(query):
             "ticker": item["display_ticker"],
             "company_name": item["name"],
             "items": get_news_items(item["yahoo_ticker"], fallback_name=item["name"])
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/compare")
+def api_compare():
+    try:
+        raw = request.args.get("symbols", "")
+        symbols = [s.strip() for s in raw.split(",") if s.strip()]
+
+        if len(symbols) < 2:
+            return jsonify({"error": "비교할 종목을 2개 이상 입력하세요."}), 400
+
+        symbols = symbols[:3]
+        items = []
+
+        for symbol in symbols:
+            target = resolve_compare_target(symbol)
+            item = get_company_profile_block(
+                target["ticker"],
+                company_name_override=target["company_name_override"],
+                display_ticker=target["display_ticker"],
+                currency=target["currency"],
+                market_label=target["market_label"]
+            )
+            items.append(item)
+
+        return jsonify({
+            "count": len(items),
+            "items": items,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M")
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 400

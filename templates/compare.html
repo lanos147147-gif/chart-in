@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chart-In | 종목 비교</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: white;
+      background: #1e293b;
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8, #0f766e);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+    }
+
+    .hero p {
+      margin: 0;
+      color: #dbeafe;
+      line-height: 1.6;
+    }
+
+    .search-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .search-box input {
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .search-box button {
+      padding: 14px 18px;
+      border: none;
+      border-radius: 12px;
+      background: #111827;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .search-box button:hover {
+      background: #000;
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .status {
+      margin: 18px 0;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: #1e293b;
+      color: #cbd5e1;
+      display: none;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+
+    .card h2 {
+      margin: 0 0 6px;
+      font-size: 24px;
+    }
+
+    .ticker {
+      color: #93c5fd;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #1e40af;
+      color: #eff6ff;
+    }
+
+    .grade-strong-buy { background: #166534; }
+    .grade-buy { background: #15803d; }
+    .grade-hold { background: #92400e; }
+    .grade-sell { background: #b91c1c; }
+    .grade-strong-sell { background: #7f1d1d; }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .metric {
+      background: #0b1220;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .metric .label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+
+    .metric .value {
+      font-size: 17px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .section-title {
+      margin: 18px 0 10px;
+      font-size: 16px;
+      color: #93c5fd;
+    }
+
+    .desc {
+      color: #d1d5db;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .reason-list, .news-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .reason-list li, .news-list li {
+      background: #0b1220;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .news-list a {
+      color: #e5e7eb;
+      text-decoration: none;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .news-meta {
+      color: #94a3b8;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .visit-box {
+      margin-top: 28px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    @media (max-width: 1080px) {
+      .compare-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-box {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="nav-links">
+        <a href="/">홈</a>
+        <a href="/us">미국주식</a>
+        <a href="/kr">한국주식</a>
+        <a href="/compare">종목비교</a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>종목 비교</h1>
+      <p>
+        미국주식, 코스피, 코스닥 종목을 2~3개까지 한 번에 비교합니다.
+        회사 소개, 시가총액, 점수, 지표, 최신 뉴스까지 같이 볼 수 있습니다.
+      </p>
+
+      <div class="search-box">
+        <input id="symbol1" type="text" placeholder="예: AAPL 또는 삼성전자">
+        <input id="symbol2" type="text" placeholder="예: NVDA 또는 SK하이닉스">
+        <input id="symbol3" type="text" placeholder="선택 입력: 005930.KS 또는 알테오젠">
+        <button id="compareBtn">비교하기</button>
+      </div>
+
+      <div class="hint">
+        입력 예시: AAPL, NVDA, TSLA, 삼성전자, 하이닉스, 005930.KS, 알테오젠
+      </div>
+    </section>
+
+    <div id="statusBox" class="status"></div>
+
+    <section id="compareResult" class="compare-grid"></section>
+
+    <div class="visit-box">
+      오늘 방문 {{ visit_stats.today }} / 오늘 순방문 {{ visit_stats.today_unique }} / 총 방문 {{ visit_stats.total }}
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='compare.js') }}"></script>
+</body>
+</html>

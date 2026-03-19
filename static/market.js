@@ -27,6 +27,14 @@
     const top10Status = document.getElementById("top10Status");
     const top10Grid = document.getElementById("top10Grid");
 
+    const loadKospiTop10Btn = document.getElementById("loadKospiTop10Btn");
+    const kospiTop10Status = document.getElementById("kospiTop10Status");
+    const kospiTop10Grid = document.getElementById("kospiTop10Grid");
+
+    const loadKosdaqTop10Btn = document.getElementById("loadKosdaqTop10Btn");
+    const kosdaqTop10Status = document.getElementById("kosdaqTop10Status");
+    const kosdaqTop10Grid = document.getElementById("kosdaqTop10Grid");
+
     const RECENT_STORAGE_KEY = marketMode === "kr"
         ? "chartin_recent_kr"
         : "chartin_recent_us";
@@ -37,30 +45,45 @@
         return;
     }
 
-    if (analyzeBtn) {
-        analyzeBtn.addEventListener("click", analyzeTicker);
-    }
+    analyzeBtn.addEventListener("click", analyzeTicker);
 
-    if (tickerInput) {
-        tickerInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                analyzeTicker();
-            }
-        });
-    }
+    tickerInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            analyzeTicker();
+        }
+    });
 
     if (clearRecentBtn) {
         clearRecentBtn.addEventListener("click", clearRecentTickers);
     }
 
-    if (loadTop10Btn && topEnabled) {
-        loadTop10Btn.addEventListener("click", loadTop10);
+    if (loadTop10Btn) {
+        loadTop10Btn.addEventListener("click", () => {
+            loadTopList("/api/top10/nasdaq", top10Status, top10Grid, "나스닥");
+        });
+    }
+
+    if (loadKospiTop10Btn) {
+        loadKospiTop10Btn.addEventListener("click", () => {
+            loadTopList("/api/top10/kospi", kospiTop10Status, kospiTop10Grid, "코스피");
+        });
+    }
+
+    if (loadKosdaqTop10Btn) {
+        loadKosdaqTop10Btn.addEventListener("click", () => {
+            loadTopList("/api/top10/kosdaq", kosdaqTop10Status, kosdaqTop10Grid, "코스닥");
+        });
     }
 
     window.addEventListener("load", () => {
         renderRecentTickers();
-        if (tickerInput && tickerInput.value.trim()) {
+
+        if (tickerInput.value.trim()) {
             analyzeTicker();
+        }
+
+        if (marketMode === "us" && topEnabled && loadTop10Btn) {
+            loadTopList("/api/top10/nasdaq", top10Status, top10Grid, "나스닥");
         }
     });
 
@@ -77,7 +100,7 @@
     }
 
     function formatNumber(value, digits = 2) {
-        if (value === null || value === undefined || Number.isNaN(value)) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) {
             return "-";
         }
         return Number(value).toLocaleString("en-US", {
@@ -87,7 +110,7 @@
     }
 
     function formatPrice(value, currency = "USD") {
-        if (value === null || value === undefined || Number.isNaN(value)) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) {
             return "-";
         }
 
@@ -104,11 +127,12 @@
     }
 
     function formatPercent(value) {
-        if (value === null || value === undefined || Number.isNaN(value)) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) {
             return "-";
         }
-        const sign = value > 0 ? "+" : "";
-        return `${sign}${Number(value).toFixed(2)}%`;
+        const num = Number(value);
+        const sign = num > 0 ? "+" : "";
+        return `${sign}${num.toFixed(2)}%`;
     }
 
     function gradeClassName(grade) {
@@ -188,9 +212,11 @@
             tickerBtn.textContent = ticker;
             tickerBtn.addEventListener("click", () => {
                 tickerInput.value = ticker;
+
                 if (marketMode === "kr" && marketSelect) {
                     marketSelect.value = ticker.endsWith(".KQ") ? "KQ" : "KS";
                 }
+
                 analyzeTicker();
             });
 
@@ -345,7 +371,7 @@
         if (scoreValue) scoreValue.textContent = `${data.summary.score}점`;
         if (priceValue) priceValue.textContent = formatPrice(data.summary.close, currentCurrency);
 
-        const change = data.summary.change_percent;
+        const change = Number(data.summary.change_percent);
         if (changeValue) {
             changeValue.textContent = `전일 대비 ${formatPercent(change)}`;
             changeValue.style.color = change >= 0 ? "#16a34a" : "#dc2626";
@@ -356,7 +382,16 @@
 
     function renderReasons(reasons) {
         if (!reasonList) return;
+
         reasonList.innerHTML = "";
+
+        if (!reasons.length) {
+            const li = document.createElement("li");
+            li.textContent = "분석 근거가 없습니다.";
+            reasonList.appendChild(li);
+            return;
+        }
+
         reasons.forEach((reason) => {
             const li = document.createElement("li");
             li.textContent = reason;
@@ -383,6 +418,7 @@
         ];
 
         indicatorGrid.innerHTML = "";
+
         items.forEach((item) => {
             const card = document.createElement("div");
             card.className = "indicator-item";
@@ -396,7 +432,7 @@
     }
 
     function renderPriceChart(chart, ticker) {
-        if (!chart || !window.Plotly) return;
+        if (!chart || !window.Plotly || !document.getElementById("priceChart")) return;
 
         const traces = [
             {
@@ -470,9 +506,9 @@
     }
 
     function renderMacdChart(chart) {
-        if (!chart || !window.Plotly) return;
+        if (!chart || !window.Plotly || !document.getElementById("macdChart")) return;
 
-        const colors = chart.macd_hist.map((v) => (v >= 0 ? "#16a34a" : "#dc2626"));
+        const colors = (chart.macd_hist || []).map((v) => (v >= 0 ? "#16a34a" : "#dc2626"));
 
         const traces = [
             {
@@ -525,7 +561,7 @@
     }
 
     function renderOscillatorChart(chart) {
-        if (!chart || !window.Plotly) return;
+        if (!chart || !window.Plotly || !document.getElementById("oscillatorChart")) return;
 
         const traces = [
             {
@@ -617,19 +653,19 @@
         });
     }
 
-    function setTop10Status(message, isError = false) {
-        if (!top10Status) return;
-        top10Status.textContent = message;
-        top10Status.classList.toggle("error", isError);
+    function setPanelStatus(element, message, isError = false) {
+        if (!element) return;
+        element.textContent = message;
+        element.classList.toggle("error", isError);
     }
 
-    function renderTop10(items) {
-        if (!top10Grid) return;
+    function renderTopCards(items, gridEl) {
+        if (!gridEl) return;
 
-        top10Grid.innerHTML = "";
+        gridEl.innerHTML = "";
 
         if (!items.length) {
-            top10Grid.innerHTML = `<div class="empty-chip">현재 Strong Buy 종목이 없어요.</div>`;
+            gridEl.innerHTML = `<div class="empty-chip">현재 표시할 종목이 없습니다.</div>`;
             return;
         }
 
@@ -646,35 +682,41 @@
                     <div>${item.grade}</div>
                     <div>${formatPrice(item.close, item.currency || "USD")}</div>
                 </div>
-                <div class="top10-comment">${item.comment}</div>
+                <div class="top10-comment">${item.comment || item.reason || ""}</div>
             `;
 
             card.addEventListener("click", () => {
                 tickerInput.value = item.ticker;
+
+                if (marketMode === "kr" && marketSelect) {
+                    marketSelect.value = item.ticker.endsWith(".KQ") ? "KQ" : "KS";
+                }
+
                 analyzeTicker();
                 window.scrollTo({ top: 0, behavior: "smooth" });
             });
 
-            top10Grid.appendChild(card);
+            gridEl.appendChild(card);
         });
     }
 
-    async function loadTop10() {
+    async function loadTopList(apiUrl, statusEl, gridEl, label) {
         try {
-            setTop10Status("TOP10 종목을 불러오는 중입니다...");
-            if (top10Grid) top10Grid.innerHTML = "";
+            setPanelStatus(statusEl, `${label} TOP10 종목을 불러오는 중입니다...`);
+            if (gridEl) gridEl.innerHTML = "";
 
-            const response = await fetch("/api/top10");
+            const response = await fetch(apiUrl);
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || "TOP10 조회 실패");
+                throw new Error(data.error || `${label} TOP10 조회 실패`);
             }
 
-            renderTop10(data.items || []);
-            setTop10Status(`Strong Buy 후보 ${data.items.length}개를 불러왔습니다.`);
+            const items = data.items || [];
+            renderTopCards(items, gridEl);
+            setPanelStatus(statusEl, `${label} 종목 ${items.length}개를 불러왔습니다.`);
         } catch (error) {
-            setTop10Status(error.message || "TOP10 조회 중 오류가 발생했습니다.", true);
+            setPanelStatus(statusEl, error.message || `${label} TOP10 조회 중 오류가 발생했습니다.`, true);
         }
     }
 })();

@@ -3,39 +3,43 @@
 <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3993361237656892" crossorigin="anonymous"></script>
     <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Chart-in</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20">
 </head>
 <body>
-   <section class="visit-strip">
-    <div class="visit-pill">
-        <span class="visit-label">전체 방문</span>
-        <strong>{{ visit_stats.total }}</strong>
-    </div>
-    <div class="visit-pill">
-        <span class="visit-label">오늘 방문</span>
-        <strong>{{ visit_stats.today }}</strong>
-    </div>
-    <div class="visit-pill">
-        <span class="visit-label">오늘 실방문</span>
-        <strong>{{ visit_stats.today_unique }}</strong>
-    </div>
-</section>
-
+    <section class="visit-strip">
+        <div class="visit-pill">
+            <span class="visit-label">전체 방문</span>
+            <strong>{{ visit_stats.total }}</strong>
+        </div>
+        <div class="visit-pill">
+            <span class="visit-label">오늘 방문</span>
+            <strong>{{ visit_stats.today }}</strong>
+        </div>
+        <div class="visit-pill">
+            <span class="visit-label">오늘 실방문</span>
+            <strong>{{ visit_stats.today_unique }}</strong>
+        </div>
+    </section>
 
     <div class="page">
         <header class="hero">
             <div class="hero-badge">US · KR STOCK ANALYZER</div>
             <h1>Chart-in</h1>
             <p class="subtitle">주타, 주식하다 현타올때</p>
-            <p class="hero-desc">미국주식 1페이지, 한국주식 2페이지로 나눠서 분석합니다.</p>
+            <p class="hero-desc">미국주식 1페이지, 한국주식 2페이지, 종목비교 3페이지로 나눠서 분석합니다.</p>
         </header>
 
         <section class="coupang-section">
-            <iframe src="https://ads-partners.coupang.com/widgets.html?id=973273&template=carousel&trackingCode=AF7808428&subId=&width=680&height=140&tsource="
-                    width="680" height="140" frameborder="0" scrolling="no"
-                    referrerpolicy="unsafe-url" browsingtopics>
+            <iframe
+                src="https://ads-partners.coupang.com/widgets.html?id=973273&template=carousel&trackingCode=AF7808428&subId=&width=680&height=140&tsource="
+                width="680"
+                height="140"
+                frameborder="0"
+                scrolling="no"
+                referrerpolicy="unsafe-url"
+                browsingtopics>
             </iframe>
         </section>
 
@@ -53,9 +57,15 @@
                 <p>삼성전자, 하이닉스, 네이버 같은 이름 검색 지원</p>
                 <span class="market-link">한국주식 페이지 열기</span>
             </a>
+
+            <a href="/compare" class="market-home-card">
+                <div class="market-badge">PAGE 3</div>
+                <h2>종목비교</h2>
+                <p>미국주식, 코스피, 코스닥 종목을 2~3개까지 한 번에 비교</p>
+                <span class="market-link">종목비교 페이지 열기</span>
+            </a>
         </section>
 
-        <!-- 여기부터 새로 추가 -->
         <section class="home-today-section">
             <div class="section-head">
                 <div>
@@ -86,7 +96,6 @@
                 </article>
             </div>
         </section>
-        <!-- 여기까지 새로 추가 -->
     </div>
 
     <footer class="site-footer">
