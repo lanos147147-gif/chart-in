@@ -2,7 +2,7 @@ Flask
 gunicorn
 pandas
 yfinance
-FinanceDataReader
+finance-datareader
 deep-translator
 ta
 setuptools<82
