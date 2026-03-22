@@ -554,6 +554,14 @@
         }
 
         function renderSummary(data) {
+            const screenMessage = document.getElementById('screenMessage');
+if (data.message) {
+    screenMessage.textContent = data.message;
+    screenMessage.style.display = 'block';
+} else {
+    screenMessage.style.display = 'none';
+}
+            
             const items = Array.isArray(data.items) ? data.items : [];
             document.getElementById('passCount').textContent = items.length;
             document.getElementById('generatedAt').textContent = data.generated_at || '-';
