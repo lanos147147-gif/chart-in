@@ -126,7 +126,6 @@ US_SMALLCAP_FILTERS = {
 }
 
 US_EXCHANGES = ["NASDAQ", "NYSE", "AMEX"]
-]
 
 _top10_cache = {"timestamp": 0, "data": []}
 _kr_cache = {"timestamp": 0, "data": []}
