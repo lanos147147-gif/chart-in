@@ -576,12 +576,13 @@ if (data.message) {
             }
         }
 
-        function renderTable(items) {
-            const tbody = document.getElementById('screenTableBody');
+ function renderTable(items, message) {
+    const tbody = document.getElementById('screenTableBody');
+    const safeItems = Array.isArray(items) ? items : [];
 
-            if (!items || items.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
+    if (safeItems.length === 0) {
+        tbody.innerHTML = `
+            <tr>
                         <td colspan="11" style="color:#6b7280;">조건을 만족하는 종목이 없습니다.</td>
                     </tr>
                 `;
