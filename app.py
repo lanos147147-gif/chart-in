@@ -1436,13 +1436,15 @@ def api_news_kr(query):
 @app.route("/api/screener/us-smallcap")
 def api_screener_us_smallcap():
     try:
-        items = get_us_smallcap_screen()
+        result = get_us_smallcap_screen()
+        items = result.get("items", [])
 
         return jsonify({
             "market": "US",
             "page_title": "미국장 중소형 옥석 가리기",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "mode": "candidate-universe",
+            "mode": result.get("mode", "strict"),
+            "message": result.get("message", ""),
             "criteria": {
                 "market_cap": "$300M ~ $2B",
                 "average_volume": "> 500K",
