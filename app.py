@@ -114,6 +114,27 @@ KOSDAQ_TOP10_CANDIDATES = [
     {"ticker": "214150.KQ", "name": "클래시스", "market": "KOSDAQ", "currency": "KRW"},
 ]
 
+US_SMALLCAP_FILTERS = {
+    "min_market_cap": 300_000_000,
+    "max_market_cap": 2_000_000_000,
+    "min_avg_volume": 500_000,
+    "max_debt_to_equity": 1.0,
+    "min_current_ratio": 1.5,
+    "max_ps_ratio": 5.0,
+    "min_price": 7.0,
+    "max_price": 30.0,
+}
+
+US_SMALLCAP_CANDIDATES = [
+    "RKLB", "LUNR", "ASTS", "ACHR", "JOBY", "RDW", "PL", "BKSY",
+    "IONQ", "RGTI", "QBTS", "ARQQ", "SOUN", "BBAI", "OUST", "AEHR",
+    "LASR", "ACMR", "MQ", "UPST", "LMND", "DOCN", "PERI", "PUBM",
+    "FVRR", "TASK", "YEXT", "AMPL", "INDI", "NVTS", "BE", "STEM",
+    "ARRY", "NOVA", "RUN", "ENVX", "SES", "SLDP", "PLAB", "HIMS",
+    "YOU", "EXFY", "LPRO", "PWP", "XMTR", "ADMA", "IRMD", "RXRX",
+    "DNA", "CRNC", "GDRX", "PAYO", "QSI", "SDGR", "TXG", "OM"
+]
+
 _top10_cache = {"timestamp": 0, "data": []}
 _kr_cache = {"timestamp": 0, "data": []}
 _market_top_cache = {
@@ -121,6 +142,8 @@ _market_top_cache = {
     "kospi": {"timestamp": 0, "data": []},
     "kosdaq": {"timestamp": 0, "data": []},
 }
+_us_smallcap_cache = {"timestamp": 0, "data": []}
+
 translator = GoogleTranslator(source="auto", target="ko")
 
 
@@ -990,6 +1013,212 @@ def get_market_top10(cache_key, candidates):
     return top10
 
 
+def to_float(value):
+    try:
+        if value is None or value == "":
+            return None
+        return float(value)
+    except Exception:
+        return None
+
+
+def clamp_number(value, min_value, max_value):
+    return max(min_value, min(value, max_value))
+
+
+def normalize_debt_to_equity(value):
+    raw = to_float(value)
+    if raw is None:
+        return None
+
+    if raw > 10:
+        return raw / 100.0
+    return raw
+
+
+def build_smallcap_label(score):
+    if score >= 85:
+        return "관심", "조건 통과 + 재무/유동성 점수가 우수합니다."
+    if score >= 70:
+        return "체크", "기본 조건은 좋지만 세부 확인이 더 필요합니다."
+    return "보류", "조건은 통과했지만 상대 점수는 낮은 편입니다."
+
+
+def calculate_smallcap_score(market_cap, avg_volume, debt_to_equity, current_ratio, ps_ratio, price):
+    cap_score = clamp_number(
+        ((market_cap - US_SMALLCAP_FILTERS["min_market_cap"]) /
+         (US_SMALLCAP_FILTERS["max_market_cap"] - US_SMALLCAP_FILTERS["min_market_cap"])) * 20,
+        0,
+        20
+    )
+
+    volume_score = clamp_number((avg_volume / 2_000_000) * 20, 0, 20)
+    debt_score = clamp_number((1 - debt_to_equity) * 20, 0, 20)
+    current_ratio_score = clamp_number(((current_ratio - 1.5) / 1.5) * 15, 0, 15)
+    ps_score = clamp_number(((5 - ps_ratio) / 5) * 20, 0, 20)
+
+    price_mid = (US_SMALLCAP_FILTERS["min_price"] + US_SMALLCAP_FILTERS["max_price"]) / 2
+    half_range = (US_SMALLCAP_FILTERS["max_price"] - US_SMALLCAP_FILTERS["min_price"]) / 2
+    price_score = clamp_number((1 - abs(price - price_mid) / half_range) * 5, 0, 5)
+
+    total = cap_score + volume_score + debt_score + current_ratio_score + ps_score + price_score
+    return int(round(clamp_number(total, 0, 100)))
+
+
+def build_smallcap_badges(market_cap, avg_volume, debt_to_equity, current_ratio, ps_ratio):
+    badges = []
+
+    if market_cap >= 1_000_000_000:
+        badges.append("기관선호 체급")
+    else:
+        badges.append("스몰캡 체급")
+
+    if avg_volume >= 1_000_000:
+        badges.append("거래량 충분")
+    else:
+        badges.append("거래량 무난")
+
+    if debt_to_equity <= 0.5:
+        badges.append("저부채")
+    else:
+        badges.append("부채 관리 가능")
+
+    if current_ratio >= 2.0:
+        badges.append("유동성 우수")
+    else:
+        badges.append("유동성 양호")
+
+    if ps_ratio <= 3.0:
+        badges.append("PSR 낮음")
+    else:
+        badges.append("PSR 무난")
+
+    return badges[:5]
+
+
+def get_us_smallcap_screen():
+    now = time.time()
+
+    if now - _us_smallcap_cache["timestamp"] < 1800 and _us_smallcap_cache["data"]:
+        return _us_smallcap_cache["data"]
+
+    rules = US_SMALLCAP_FILTERS
+    results = []
+
+    for ticker in US_SMALLCAP_CANDIDATES:
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info or {}
+            hist = stock.history(period="6mo", interval="1d", auto_adjust=False)
+
+            if hist is None or hist.empty:
+                continue
+
+            close_series = hist["Close"].dropna()
+            volume_series = hist["Volume"].dropna()
+
+            if close_series.empty or volume_series.empty:
+                continue
+
+            price = to_float(info.get("currentPrice"))
+            if price is None:
+                price = to_float(close_series.iloc[-1])
+
+            avg_volume = (
+                to_float(info.get("averageVolume"))
+                or to_float(info.get("averageVolume10days"))
+                or to_float(volume_series.tail(60).mean())
+            )
+
+            market_cap = to_float(info.get("marketCap"))
+            debt_to_equity = normalize_debt_to_equity(info.get("debtToEquity"))
+            current_ratio = to_float(info.get("currentRatio"))
+            ps_ratio = to_float(info.get("priceToSalesTrailing12Months"))
+
+            if any(v is None for v in [price, avg_volume, market_cap, debt_to_equity, current_ratio, ps_ratio]):
+                continue
+
+            if not (rules["min_market_cap"] <= market_cap <= rules["max_market_cap"]):
+                continue
+
+            if avg_volume < rules["min_avg_volume"]:
+                continue
+
+            if debt_to_equity >= rules["max_debt_to_equity"]:
+                continue
+
+            if current_ratio <= rules["min_current_ratio"]:
+                continue
+
+            if ps_ratio >= rules["max_ps_ratio"]:
+                continue
+
+            if not (rules["min_price"] <= price <= rules["max_price"]):
+                continue
+
+            company_name = info.get("shortName") or info.get("longName") or ticker
+            sector = info.get("sector") or "-"
+            industry = info.get("industry") or "-"
+
+            change_percent = 0
+            if len(close_series) >= 2 and float(close_series.iloc[-2]) != 0:
+                change_percent = (
+                    (float(close_series.iloc[-1]) - float(close_series.iloc[-2])) /
+                    float(close_series.iloc[-2])
+                ) * 100
+
+            score = calculate_smallcap_score(
+                market_cap=market_cap,
+                avg_volume=avg_volume,
+                debt_to_equity=debt_to_equity,
+                current_ratio=current_ratio,
+                ps_ratio=ps_ratio,
+                price=price
+            )
+
+            label, comment = build_smallcap_label(score)
+            badges = build_smallcap_badges(
+                market_cap=market_cap,
+                avg_volume=avg_volume,
+                debt_to_equity=debt_to_equity,
+                current_ratio=current_ratio,
+                ps_ratio=ps_ratio
+            )
+
+            results.append({
+                "ticker": ticker,
+                "company_name": company_name,
+                "sector": sector,
+                "industry": industry,
+                "score": score,
+                "label": label,
+                "comment": comment,
+                "price": safe_round(price, 2),
+                "change_percent": safe_round(change_percent, 2),
+                "market_cap": int(round(market_cap)),
+                "market_cap_text": format_market_cap(market_cap),
+                "avg_volume": int(round(avg_volume)),
+                "avg_volume_text": f"{avg_volume:,.0f}",
+                "debt_to_equity": safe_round(debt_to_equity, 2),
+                "current_ratio": safe_round(current_ratio, 2),
+                "ps_ratio": safe_round(ps_ratio, 2),
+                "badges": badges
+            })
+
+        except Exception:
+            continue
+
+    results.sort(
+        key=lambda x: (x["score"], x["avg_volume"], x["market_cap"]),
+        reverse=True
+    )
+
+    final_items = results[:30]
+    _us_smallcap_cache["timestamp"] = now
+    _us_smallcap_cache["data"] = final_items
+    return final_items
+
+
 @app.route("/")
 def home():
     return render_page_with_visit("home.html")
@@ -998,6 +1227,11 @@ def home():
 @app.route("/us")
 def us_page():
     return render_page_with_visit("us.html")
+
+
+@app.route("/us-smallcap")
+def us_smallcap_page():
+    return render_page_with_visit("us_smallcap.html")
 
 
 @app.route("/kr")
@@ -1164,6 +1398,31 @@ def api_news_kr(query):
             "ticker": item["display_ticker"],
             "company_name": item["name"],
             "items": get_news_items(item["yahoo_ticker"], fallback_name=item["name"])
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/screener/us-smallcap")
+def api_screener_us_smallcap():
+    try:
+        items = get_us_smallcap_screen()
+
+        return jsonify({
+            "market": "US",
+            "page_title": "미국장 중소형 옥석 가리기",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "mode": "candidate-universe",
+            "criteria": {
+                "market_cap": "$300M ~ $2B",
+                "average_volume": "> 500K",
+                "debt_to_equity": "< 1.0",
+                "current_ratio": "> 1.5",
+                "ps_ratio": "< 5",
+                "price": "$7 ~ $30"
+            },
+            "count": len(items),
+            "items": items
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
