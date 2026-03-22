@@ -470,6 +470,7 @@
 
             <div>
                 <div class="summary-cards">
+                    <div id="screenMessage" class="empty-box" style="display:none; margin-bottom:16px;"></div>
                     <div class="summary-card">
                         <span class="label">통과 종목 수</span>
                         <div class="value" id="passCount">-</div>
@@ -489,7 +490,7 @@
 
                 <div class="loading-box" id="loadingBox">데이터 불러오는 중...</div>
                 <div class="error-box" id="errorBox"></div>
-                <div class="empty-box" id="emptyBox">조건을 만족하는 종목이 아직 없습니다.</div>
+              <div class="empty-box" id="emptyBox">엄격 조건 통과 종목이 없어 근접 후보를 표시합니다.</div>
 
                 <div class="screen-table-wrap">
                     <div class="screen-table-head">
