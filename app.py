@@ -142,7 +142,7 @@ _market_top_cache = {
     "kospi": {"timestamp": 0, "data": []},
     "kosdaq": {"timestamp": 0, "data": []},
 }
-_us_smallcap_cache = {"timestamp": 0, "data": []}
+_us_smallcap_cache = {"timestamp": 0, "data": {}}
 
 translator = GoogleTranslator(source="auto", target="ko")
 
@@ -1103,7 +1103,8 @@ def get_us_smallcap_screen():
         return _us_smallcap_cache["data"]
 
     rules = US_SMALLCAP_FILTERS
-    results = []
+    strict_results = []
+    relaxed_results = []
 
     for ticker in US_SMALLCAP_CANDIDATES:
         try:
@@ -1135,25 +1136,7 @@ def get_us_smallcap_screen():
             current_ratio = to_float(info.get("currentRatio"))
             ps_ratio = to_float(info.get("priceToSalesTrailing12Months"))
 
-            if any(v is None for v in [price, avg_volume, market_cap, debt_to_equity, current_ratio, ps_ratio]):
-                continue
-
-            if not (rules["min_market_cap"] <= market_cap <= rules["max_market_cap"]):
-                continue
-
-            if avg_volume < rules["min_avg_volume"]:
-                continue
-
-            if debt_to_equity >= rules["max_debt_to_equity"]:
-                continue
-
-            if current_ratio <= rules["min_current_ratio"]:
-                continue
-
-            if ps_ratio >= rules["max_ps_ratio"]:
-                continue
-
-            if not (rules["min_price"] <= price <= rules["max_price"]):
+            if any(v is None for v in [price, avg_volume, market_cap]):
                 continue
 
             company_name = info.get("shortName") or info.get("longName") or ticker
@@ -1167,25 +1150,49 @@ def get_us_smallcap_screen():
                     float(close_series.iloc[-2])
                 ) * 100
 
+            score_market_cap = market_cap
+            score_avg_volume = avg_volume
+            score_debt_to_equity = debt_to_equity if debt_to_equity is not None else 1.2
+            score_current_ratio = current_ratio if current_ratio is not None else 1.2
+            score_ps_ratio = ps_ratio if ps_ratio is not None else 6.0
+
             score = calculate_smallcap_score(
-                market_cap=market_cap,
-                avg_volume=avg_volume,
-                debt_to_equity=debt_to_equity,
-                current_ratio=current_ratio,
-                ps_ratio=ps_ratio,
-                price=price
+                market_cap=clamp_number(score_market_cap, rules["min_market_cap"], rules["max_market_cap"]),
+                avg_volume=min(score_avg_volume, 2_000_000),
+                debt_to_equity=clamp_number(score_debt_to_equity, 0, 1.2),
+                current_ratio=clamp_number(score_current_ratio, 1.0, 3.0),
+                ps_ratio=clamp_number(score_ps_ratio, 0.5, 6.0),
+                price=clamp_number(price, rules["min_price"], rules["max_price"])
+            )
+
+            passed_strict = (
+                rules["min_market_cap"] <= market_cap <= rules["max_market_cap"]
+                and avg_volume >= rules["min_avg_volume"]
+                and debt_to_equity is not None and debt_to_equity < rules["max_debt_to_equity"]
+                and current_ratio is not None and current_ratio > rules["min_current_ratio"]
+                and ps_ratio is not None and ps_ratio < rules["max_ps_ratio"]
+                and rules["min_price"] <= price <= rules["max_price"]
+            )
+
+            passed_relaxed = (
+                200_000_000 <= market_cap <= 3_000_000_000
+                and avg_volume >= 300_000
+                and (debt_to_equity is None or debt_to_equity < 1.5)
+                and (current_ratio is None or current_ratio > 1.0)
+                and (ps_ratio is None or ps_ratio < 8.0)
+                and 5 <= price <= 35
             )
 
             label, comment = build_smallcap_label(score)
             badges = build_smallcap_badges(
                 market_cap=market_cap,
                 avg_volume=avg_volume,
-                debt_to_equity=debt_to_equity,
-                current_ratio=current_ratio,
-                ps_ratio=ps_ratio
+                debt_to_equity=score_debt_to_equity,
+                current_ratio=score_current_ratio,
+                ps_ratio=score_ps_ratio
             )
 
-            results.append({
+            item = {
                 "ticker": ticker,
                 "company_name": company_name,
                 "sector": sector,
@@ -1199,24 +1206,47 @@ def get_us_smallcap_screen():
                 "market_cap_text": format_market_cap(market_cap),
                 "avg_volume": int(round(avg_volume)),
                 "avg_volume_text": f"{avg_volume:,.0f}",
-                "debt_to_equity": safe_round(debt_to_equity, 2),
-                "current_ratio": safe_round(current_ratio, 2),
-                "ps_ratio": safe_round(ps_ratio, 2),
+                "debt_to_equity": safe_round(debt_to_equity, 2) if debt_to_equity is not None else None,
+                "current_ratio": safe_round(current_ratio, 2) if current_ratio is not None else None,
+                "ps_ratio": safe_round(ps_ratio, 2) if ps_ratio is not None else None,
                 "badges": badges
-            })
+            }
+
+            if passed_strict:
+                strict_results.append(item)
+            elif passed_relaxed:
+                relaxed_results.append(item)
 
         except Exception:
             continue
 
-    results.sort(
+    strict_results.sort(
+        key=lambda x: (x["score"], x["avg_volume"], x["market_cap"]),
+        reverse=True
+    )
+    relaxed_results.sort(
         key=lambda x: (x["score"], x["avg_volume"], x["market_cap"]),
         reverse=True
     )
 
-    final_items = results[:30]
+    if strict_results:
+        final_items = strict_results[:30]
+        mode = "strict"
+        message = "엄격 조건 통과 종목"
+    else:
+        final_items = relaxed_results[:12]
+        mode = "relaxed"
+        message = "엄격 조건 통과 종목이 없어 근접 후보를 표시합니다."
+
+    result = {
+        "mode": mode,
+        "message": message,
+        "items": final_items
+    }
+
     _us_smallcap_cache["timestamp"] = now
-    _us_smallcap_cache["data"] = final_items
-    return final_items
+    _us_smallcap_cache["data"] = result
+    return result
 
 
 @app.route("/")
