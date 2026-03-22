@@ -1180,56 +1180,82 @@ def get_us_smallcap_screen():
             )
 
             if hist is None or hist.empty:
+                continuedef get_us_market_universe(limit=800):
+    now = time.time()
+
+    if now - _us_market_universe_cache["timestamp"] < 12 * 60 * 60 and _us_market_universe_cache["data"]:
+        return _us_market_universe_cache["data"]
+
+    frames = []
+
+    for exchange in US_EXCHANGES:
+        try:
+            df = fdr.StockListing(exchange)
+            if df is None or df.empty:
                 continue
 
-            for ticker in batch:
-                try:
-                    if isinstance(hist.columns, pd.MultiIndex):
-                        if ticker not in hist.columns.get_level_values(0):
-                            continue
-                        ticker_df = hist[ticker].copy()
-                    else:
-                        if len(batch) != 1:
-                            continue
-                        ticker_df = hist.copy()
+            df = df.fillna("")
+            symbol_col = "Symbol" if "Symbol" in df.columns else None
+            name_col = "Name" if "Name" in df.columns else None
+            marketcap_col = "Marcap" if "Marcap" in df.columns else None
 
-                    if ticker_df is None or ticker_df.empty:
-                        continue
+            if not symbol_col:
+                continue
 
-                    close_series = ticker_df["Close"].dropna()
-                    volume_series = ticker_df["Volume"].dropna()
+            temp = pd.DataFrame({
+                "ticker": df[symbol_col].astype(str).str.upper().str.strip(),
+                "company_name": df[name_col].astype(str).str.strip() if name_col else "",
+                "market_cap_hint": pd.to_numeric(df[marketcap_col], errors="coerce") if marketcap_col else None,
+                "exchange": exchange
+            })
 
-                    if len(close_series) < 20 or volume_series.empty:
-                        continue
-
-                    price = to_float(close_series.iloc[-1])
-                    avg_volume = to_float(volume_series.tail(20).mean())
-
-                    if price is None or avg_volume is None:
-                        continue
-
-                    if 5 <= price <= 35 and avg_volume >= 300_000:
-                        price_volume_candidates.append({
-                            "ticker": ticker,
-                            "price": price,
-                            "avg_volume": avg_volume
-                        })
-
-                except Exception:
-                    continue
-
+            frames.append(temp)
         except Exception:
             continue
 
-    price_volume_candidates.sort(
-        key=lambda x: (x["avg_volume"], x["price"]),
-        reverse=True
-    )
+    if not frames:
+        return []
 
-    narrowed_candidates = price_volume_candidates[:350]
+    universe = pd.concat(frames, ignore_index=True).drop_duplicates(subset=["ticker"])
+    universe["ticker"] = universe["ticker"].astype(str).str.upper().str.strip()
+    universe = universe[universe["ticker"].str.match(r"^[A-Z]{1,5}$", na=False)]
 
-    for row in narrowed_candidates:
-        ticker = row["ticker"]
+    if "market_cap_hint" in universe.columns:
+        universe = universe.sort_values(by="market_cap_hint", ascending=False, na_position="last")
+
+    items = universe.head(limit).to_dict("records")
+
+    _us_market_universe_cache["timestamp"] = now
+    _us_market_universe_cache["data"] = items
+    return items
+
+
+def get_us_smallcap_screen():
+    now = time.time()
+
+    if now - _us_smallcap_cache["timestamp"] < 1800 and _us_smallcap_cache["data"]:
+        return _us_smallcap_cache["data"]
+
+    rules = US_SMALLCAP_FILTERS
+    strict_results = []
+    relaxed_results = []
+
+    universe = get_us_market_universe(limit=800)
+
+    if not universe:
+        result = {
+            "mode": "empty",
+            "message": "미국 상장주 목록을 불러오지 못했습니다.",
+            "items": []
+        }
+        _us_smallcap_cache["timestamp"] = now
+        _us_smallcap_cache["data"] = result
+        return result
+
+    for item in universe[:250]:
+        ticker = item.get("ticker")
+        if not ticker:
+            continue
 
         try:
             stock = yf.Ticker(ticker)
@@ -1245,11 +1271,10 @@ def get_us_smallcap_screen():
             if close_series.empty or volume_series.empty:
                 continue
 
-            price = row["price"]
+            price = to_float(info.get("currentPrice")) or to_float(close_series.iloc[-1])
             avg_volume = (
                 to_float(info.get("averageVolume"))
                 or to_float(info.get("averageVolume10days"))
-                or row["avg_volume"]
                 or to_float(volume_series.tail(60).mean())
             )
 
@@ -1314,7 +1339,7 @@ def get_us_smallcap_screen():
                 ps_ratio=score_ps_ratio
             )
 
-            item = {
+            row = {
                 "ticker": ticker,
                 "company_name": company_name,
                 "sector": sector,
@@ -1335,40 +1360,34 @@ def get_us_smallcap_screen():
             }
 
             if passed_strict:
-                strict_results.append(item)
+                strict_results.append(row)
             elif passed_relaxed:
-                relaxed_results.append(item)
+                relaxed_results.append(row)
 
         except Exception:
             continue
 
-    strict_results.sort(
-        key=lambda x: (x["score"], x["avg_volume"], x["market_cap"]),
-        reverse=True
-    )
-    relaxed_results.sort(
-        key=lambda x: (x["score"], x["avg_volume"], x["market_cap"]),
-        reverse=True
-    )
+    strict_results.sort(key=lambda x: (x["score"], x["avg_volume"], x["market_cap"]), reverse=True)
+    relaxed_results.sort(key=lambda x: (x["score"], x["avg_volume"], x["market_cap"]), reverse=True)
 
     if strict_results:
-        final_items = strict_results[:30]
-        mode = "strict"
-        message = "엄격 조건 통과 종목"
+        result = {
+            "mode": "strict",
+            "message": "엄격 조건 통과 종목",
+            "items": strict_results[:30]
+        }
     elif relaxed_results:
-        final_items = relaxed_results[:20]
-        mode = "relaxed"
-        message = "엄격 조건 통과 종목이 없어 근접 후보를 표시합니다."
+        result = {
+            "mode": "relaxed",
+            "message": "엄격 조건 통과 종목이 없어 근접 후보를 표시합니다.",
+            "items": relaxed_results[:20]
+        }
     else:
-        final_items = []
-        mode = "empty"
-        message = "전체 미국 상장주 기준으로 스캔했지만 현재 조건에 맞는 종목이 없습니다."
-
-    result = {
-        "mode": mode,
-        "message": message,
-        "items": final_items
-    }
+        result = {
+            "mode": "empty",
+            "message": "현재 조건에 맞는 종목이 없습니다.",
+            "items": []
+        }
 
     _us_smallcap_cache["timestamp"] = now
     _us_smallcap_cache["data"] = result
