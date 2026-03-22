@@ -125,7 +125,15 @@ US_SMALLCAP_FILTERS = {
     "max_price": 30.0,
 }
 
-US_EXCHANGES = ["NASDAQ", "NYSE", "AMEX"]
+US_SMALLCAP_CANDIDATES = [
+    "RKLB", "LUNR", "ASTS", "ACHR", "JOBY", "RDW", "PL", "BKSY",
+    "IONQ", "RGTI", "QBTS", "ARQQ", "SOUN", "BBAI", "OUST", "AEHR",
+    "LASR", "ACMR", "MQ", "UPST", "LMND", "DOCN", "PERI", "PUBM",
+    "FVRR", "TASK", "YEXT", "AMPL", "INDI", "NVTS", "BE", "STEM",
+    "ARRY", "NOVA", "RUN", "ENVX", "SES", "SLDP", "PLAB", "HIMS",
+    "YOU", "EXFY", "LPRO", "PWP", "XMTR", "ADMA", "IRMD", "RXRX",
+    "DNA", "CRNC", "GDRX", "PAYO", "QSI", "SDGR", "TXG", "OM"
+]
 
 _top10_cache = {"timestamp": 0, "data": []}
 _kr_cache = {"timestamp": 0, "data": []}
