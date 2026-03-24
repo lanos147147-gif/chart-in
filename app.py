@@ -143,7 +143,6 @@ _market_top_cache = {
     "kosdaq": {"timestamp": 0, "data": []},
 }
 _us_smallcap_cache = {"timestamp": 0, "data": {}}
-_us_market_universe_cache = {"timestamp": 0, "data": []}
 
 translator = GoogleTranslator(source="auto", target="ko")
 
@@ -1095,56 +1094,6 @@ def build_smallcap_badges(market_cap, avg_volume, debt_to_equity, current_ratio,
         badges.append("PSR 무난")
 
     return badges[:5]
-
-
-def get_us_market_universe():
-    now = time.time()
-
-    if now - _us_market_universe_cache["timestamp"] < 12 * 60 * 60 and _us_market_universe_cache["data"]:
-        return _us_market_universe_cache["data"]
-
-    frames = []
-
-    for exchange in US_EXCHANGES:
-        try:
-            df = fdr.StockListing(exchange)
-            if df is None or df.empty:
-                continue
-
-            df = df.fillna("")
-            symbol_col = "Symbol" if "Symbol" in df.columns else None
-            name_col = "Name" if "Name" in df.columns else None
-
-            if not symbol_col:
-                continue
-
-            temp = pd.DataFrame({
-                "ticker": df[symbol_col].astype(str).str.upper().str.strip(),
-                "company_name": df[name_col].astype(str).str.strip() if name_col else "",
-                "exchange": exchange
-            })
-
-            frames.append(temp)
-
-        except Exception:
-            continue
-
-    if not frames:
-        return []
-
-    universe = pd.concat(frames, ignore_index=True).drop_duplicates(subset=["ticker"])
-    universe["ticker"] = universe["ticker"].astype(str).str.upper().str.strip()
-
-    universe = universe[
-        universe["ticker"].str.match(r"^[A-Z]{1,5}$", na=False)
-    ]
-
-    items = universe.to_dict("records")
-
-    _us_market_universe_cache["timestamp"] = now
-    _us_market_universe_cache["data"] = items
-    return items
-
 
 def get_us_smallcap_screen():
     now = time.time()
